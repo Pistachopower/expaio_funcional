@@ -1,5 +1,8 @@
 # ExpaIO - Documentación del Proyecto
 
+## 0. Aplicación:
+- https://expaio-funcional.vercel.app/
+
 ## 1. Introducción
 **ExpaIO** es una aplicación web diseñada para ayudar a las personas que acaban de mudarse a Suiza (o planean hacerlo). Su misión es simplificar la burocracia y la integración mediante herramientas fáciles de usar y un asistente inteligente.
 
