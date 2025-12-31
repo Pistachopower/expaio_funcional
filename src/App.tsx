@@ -37,8 +37,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const App: React.FC = () => {
     return (
         <Router>
-            <div className="flex h-screen w-full bg-background-light dark:bg-background-dark text-[#111815] dark:text-white overflow-hidden">
-
+            <div className="flex h-screen w-full bg-background-light dark:bg-background-dark text-[#111815] dark:text-white overflow-hidden relative">
                 {/* Desktop Sidebar */}
                 <SideNav />
 
@@ -74,8 +73,6 @@ const App: React.FC = () => {
 
                     {/* Mobile Bottom Nav */}
                     <BottomNav />
-
-                    <ThemeToggle />
                 </div>
             </div>
         </Router>
