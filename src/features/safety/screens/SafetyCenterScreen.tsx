@@ -1,12 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { InfoButton } from '../../../components';
 import { geminiService } from '../../../lib/geminiService';
+import { supabase } from '../../../lib/supabaseClient';
+
+interface SafetyAlert {
+    id: string;
+    title: string;
+    description: string;
+    details?: string;
+    source?: string;
+    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    image_url?: string;
+    link?: string;
+}
 
 export const SafetyCenterScreen: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [aiResult, setAiResult] = useState<{ text: string; link?: string; linkLabel?: string } | null>(null);
+    const [alerts, setAlerts] = useState<SafetyAlert[]>([]);
+    const [isLoadingAlerts, setIsLoadingAlerts] = useState(true);
+    const [selectedAlert, setSelectedAlert] = useState<SafetyAlert | null>(null);
+
+    useEffect(() => {
+        fetchAlerts();
+    }, []);
+
+    const fetchAlerts = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('safety_alerts')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setAlerts(data || []);
+        } catch (error) {
+            console.error('Error fetching safety alerts:', error);
+        } finally {
+            setIsLoadingAlerts(false);
+        }
+    };
 
     const handleSearch = async () => {
         if (!searchQuery.trim()) return;
@@ -21,6 +56,30 @@ export const SafetyCenterScreen: React.FC = () => {
             setIsSearching(false);
         }
     };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'CRITICAL': return 'bg-red-600';
+            case 'HIGH': return 'bg-red-500';
+            case 'MEDIUM': return 'bg-orange-500';
+            default: return 'bg-blue-500';
+        }
+    };
+
+    const getPriorityIcon = (priority: string) => {
+        switch (priority) {
+            case 'CRITICAL': return 'gavel';
+            case 'HIGH': return 'warning';
+            case 'MEDIUM': return 'error';
+            default: return 'info';
+        }
+    };
+
+    // Filter alerts based on search query
+    const filteredAlerts = alerts.filter(alert =>
+        alert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alert.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="flex flex-col w-full pb-24 bg-background-light dark:bg-background-dark h-full overflow-y-auto animate-fade-in">
@@ -95,30 +154,43 @@ export const SafetyCenterScreen: React.FC = () => {
                     </h2>
                     <Link to="/offer-verifier" className="text-sm font-semibold text-primary hover:underline">Verificar Oferta</Link>
                 </div>
-                <div className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory px-4 gap-4 pb-4 md:grid md:grid-cols-2 md:overflow-visible">
-                    <Link to="/offer-verifier" className="snap-center shrink-0 w-[85%] max-w-[320px] md:w-full md:max-w-none bg-white dark:bg-card-dark rounded-xl shadow-sm border border-red-100 dark:border-red-900/30 overflow-hidden flex flex-col hover:border-red-500/30 transition-colors">
-                        <div className="h-32 w-full bg-cover bg-center relative" style={{ backgroundImage: "url('https://picsum.photos/seed/safety1/600/300')" }}>
-                            <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1">
-                                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>warning</span> ALTA PRIORIDAD
-                            </div>
-                        </div>
-                        <div className="p-4 flex flex-col gap-2">
-                            <h3 className="text-base font-bold text-[#111815] dark:text-white leading-tight">Estafa SMS Swiss Post</h3>
-                            <p className="text-sm text-[#638878] dark:text-gray-300">Los estafadores envían enlaces de "pago de aduanas".</p>
-                        </div>
-                    </Link>
-                    <Link to="/housing-verification" className="snap-center shrink-0 w-[85%] max-w-[320px] md:w-full md:max-w-none bg-white dark:bg-card-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col hover:border-orange-500/30 transition-colors">
-                        <div className="h-32 w-full bg-cover bg-center relative" style={{ backgroundImage: "url('https://picsum.photos/seed/safety2/600/300')" }}>
-                            <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1">
-                                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>error</span> PRECAUCIÓN
-                            </div>
-                        </div>
-                        <div className="p-4 flex flex-col gap-2">
-                            <h3 className="text-base font-bold text-[#111815] dark:text-white leading-tight">Falsos Correos de Impuestos</h3>
-                            <p className="text-sm text-[#638878] dark:text-gray-300">La oficina cantonal nunca pide detalles bancarios por email.</p>
-                        </div>
-                    </Link>
-                </div>
+
+                {isLoadingAlerts ? (
+                    <div className="flex px-4 gap-4 overflow-x-auto no-scrollbar">
+                        {[1, 2].map(i => (
+                            <div key={i} className="shrink-0 w-[85%] max-w-[320px] h-64 bg-gray-100 dark:bg-card-dark rounded-xl animate-pulse"></div>
+                        ))}
+                    </div>
+                ) : filteredAlerts.length > 0 ? (
+                    <div className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory px-4 gap-4 pb-4 md:grid md:grid-cols-2 md:overflow-visible">
+                        {filteredAlerts.map((alert) => (
+                            <button
+                                key={alert.id}
+                                onClick={() => setSelectedAlert(alert)}
+                                className="snap-center shrink-0 w-[85%] max-w-[320px] md:w-full md:max-w-none bg-white dark:bg-card-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col hover:border-primary/30 transition-colors text-left"
+                            >
+                                <div
+                                    className="h-32 w-full bg-cover bg-center relative"
+                                    style={{ backgroundImage: `url('${alert.image_url || 'https://picsum.photos/seed/' + alert.id + '/600/300'}')` }}
+                                >
+                                    <div className={`absolute top-3 left-3 ${getPriorityColor(alert.priority)} text-white text-xs font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1`}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{getPriorityIcon(alert.priority)}</span>
+                                        {alert.priority}
+                                    </div>
+                                </div>
+                                <div className="p-4 flex flex-col gap-2">
+                                    <h3 className="text-base font-bold text-[#111815] dark:text-white leading-tight">{alert.title}</h3>
+                                    <p className="text-sm text-[#638878] dark:text-gray-300 line-clamp-2">{alert.description}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                        <span className="material-symbols-outlined text-4xl mb-2">{searchQuery ? 'search_off' : 'check_circle'}</span>
+                        <p>{searchQuery ? 'No se encontraron alertas con ese término.' : 'No hay alertas activas en este momento. ¡Sigue así!'}</p>
+                    </div>
+                )}
             </div>
 
             <div className="px-4 pt-4 w-full max-w-5xl mx-auto">
@@ -144,6 +216,109 @@ export const SafetyCenterScreen: React.FC = () => {
                     </Link>
                 </div>
             </div>
+
+            {/* Detail Modal */}
+            {selectedAlert && (
+                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedAlert(null)}>
+                    <div
+                        className="bg-white dark:bg-card-dark w-full md:max-w-2xl md:rounded-2xl rounded-t-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-slide-up"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Image Header */}
+                        <div className="relative h-64 w-full bg-cover bg-center" style={{ backgroundImage: `url('${selectedAlert.image_url || 'https://picsum.photos/seed/' + selectedAlert.id + '/600/300'}')` }}>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                            <button
+                                onClick={() => setSelectedAlert(null)}
+                                className="absolute top-4 right-4 size-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                            <div className="absolute bottom-4 left-4 right-4">
+                                <div className={`inline-flex ${getPriorityColor(selectedAlert.priority)} text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 mb-3`}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{getPriorityIcon(selectedAlert.priority)}</span>
+                                    {selectedAlert.priority}
+                                </div>
+                                <h2 className="text-2xl font-bold text-white leading-tight">{selectedAlert.title}</h2>
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6">
+                            <p className="text-base text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">{selectedAlert.description}</p>
+
+                            {selectedAlert.details && (
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-bold text-[#111815] dark:text-white flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-primary">shield</span>
+                                        Cómo Protegerte
+                                    </h3>
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 space-y-3">
+                                        {selectedAlert.details.split('\n').map((line, idx) => {
+                                            const trimmedLine = line.trim();
+                                            if (!trimmedLine) return null;
+
+                                            // Check if it's a bullet point
+                                            const isBullet = trimmedLine.startsWith('*') || trimmedLine.startsWith('-');
+                                            const isSubBullet = trimmedLine.match(/^\s{2,}\*/);
+
+                                            if (isBullet || isSubBullet) {
+                                                const text = trimmedLine.replace(/^[\s*-]+/, '').trim();
+                                                const isBold = text.includes('**');
+                                                const cleanText = text.replace(/\*\*/g, '');
+
+                                                return (
+                                                    <div key={idx} className={`flex gap-3 ${isSubBullet ? 'ml-6' : ''}`}>
+                                                        <span className="text-primary mt-1 shrink-0">•</span>
+                                                        <p className={`text-sm ${isBold ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-600 dark:text-gray-400'} leading-relaxed`}>
+                                                            {cleanText}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return (
+                                                <p key={idx} className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                                                    {trimmedLine}
+                                                </p>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Source Citation */}
+                            {selectedAlert.source && (
+                                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>info</span>
+                                        <div>
+                                            <span className="font-semibold">Fuente: </span>
+                                            <span>{selectedAlert.source}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="mt-6 flex gap-3">
+                                <Link
+                                    to="/offer-verifier"
+                                    className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>verified_user</span>
+                                    Verificar Oferta
+                                </Link>
+                                <button
+                                    onClick={() => setSelectedAlert(null)}
+                                    className="px-6 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

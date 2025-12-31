@@ -85,7 +85,7 @@ export const DirectoryScreen: React.FC = () => {
             <BackHeader title="Directorio Verificado" />
             <div className="bg-surface-light dark:bg-surface-dark px-4 pb-4 pt-2">
                 <div className="flex items-center mb-4">
-                    <h1 className="text-[#111815] dark:text-white tracking-tight text-[26px] font-bold leading-tight text-left">Red de Apoyo Suiza</h1>
+                    <h1 className="text-[#111815] dark:text-white tracking-tight text-[26px] font-bold leading-tight text-left">Directorio</h1>
                     <InfoButton
                         title="Directorio de Contactos"
                         text="Una lista curada de organizaciones, escuelas y servicios legales que ayudan específicamente a los recién llegados. Todos los perfiles con el check naranja han sido verificados por nosotros."
