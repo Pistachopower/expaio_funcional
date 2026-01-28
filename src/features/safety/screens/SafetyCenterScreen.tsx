@@ -18,11 +18,14 @@ interface SafetyAlert {
 interface SocialScamReport {
     id: string;
     platform: string;
-    user_name: string;
     content: string;
-    date_posted: string;
+    created_at: string;
     likes: number;
-    avatar_url: string;
+    user_id: string;
+    profiles: {
+        username: string;
+        avatar_url: string;
+    } | null;
 }
 
 const getRelevantImage = (title: string, description: string): string => {
@@ -58,8 +61,17 @@ export const SafetyCenterScreen: React.FC = () => {
     const [isLoadingAlerts, setIsLoadingAlerts] = useState(true);
     const [selectedAlert, setSelectedAlert] = useState<SafetyAlert | null>(null);
     const [communityReports, setCommunityReports] = useState<SocialScamReport[]>([]);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+
+    // New state for reporting
+    const [isReporting, setIsReporting] = useState(false);
+    const [editingReport, setEditingReport] = useState<SocialScamReport | null>(null); // New state for editing
+    const [newReportPlatform, setNewReportPlatform] = useState('WhatsApp');
+    const [newReportContent, setNewReportContent] = useState('');
+    const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
     useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user));
         fetchAlerts();
         fetchCommunityReports();
     }, []);
@@ -82,10 +94,17 @@ export const SafetyCenterScreen: React.FC = () => {
 
     const fetchCommunityReports = async () => {
         try {
+            // Join with profiles table to get username and avatar
             const { data, error } = await supabase
                 .from('community_reports')
-                .select('*')
-                .order('date_posted', { ascending: false }); // Assuming 'date_posted' is the column name
+                .select(`
+                    *,
+                    profiles:user_id (
+                        username,
+                        avatar_url
+                    )
+                `)
+                .order('created_at', { ascending: false });
 
             if (error) throw error;
             setCommunityReports(data || []);
@@ -106,6 +125,87 @@ export const SafetyCenterScreen: React.FC = () => {
         } finally {
             setIsSearching(false);
         }
+    };
+
+    const handleSubmitReport = async () => {
+        if (!newReportContent.trim()) return;
+
+        setIsSubmittingReport(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                alert('Debes iniciar sesión para reportar.');
+                return;
+            }
+
+            if (editingReport) {
+                // Update existing report
+                const { error } = await supabase
+                    .from('community_reports')
+                    .update({
+                        platform: newReportPlatform,
+                        content: newReportContent,
+                    })
+                    .eq('id', editingReport.id);
+
+                if (error) throw error;
+            } else {
+                // Create new report
+                const { error } = await supabase
+                    .from('community_reports')
+                    .insert({
+                        user_id: user.id,
+                        platform: newReportPlatform,
+                        content: newReportContent,
+                    });
+
+                if (error) throw error;
+            }
+
+            // Reset form and close modal
+            handleCloseModal();
+
+            // Refresh list
+            fetchCommunityReports();
+
+        } catch (error) {
+            console.error('Error submitting report:', error);
+            alert('Error al enviar el reporte. Inténtalo de nuevo.');
+        } finally {
+            setIsSubmittingReport(false);
+        }
+    };
+
+    const handleDeleteReport = async (reportId: string) => {
+        if (!window.confirm('¿Estás seguro de que quieres borrar este reporte?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('community_reports')
+                .delete()
+                .eq('id', reportId);
+
+            if (error) throw error;
+            fetchCommunityReports();
+        } catch (error) {
+            console.error('Error deleting report:', error);
+            alert('Error al borrar el reporte.');
+        }
+    };
+
+    const handleOpenEdit = (report: SocialScamReport) => {
+        setEditingReport(report);
+        setNewReportPlatform(report.platform);
+        setNewReportContent(report.content);
+        setIsReporting(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsReporting(false);
+        setEditingReport(null);
+        setNewReportContent('');
+        setNewReportPlatform('WhatsApp');
     };
 
     const getPriorityColor = (priority: string) => {
@@ -251,46 +351,93 @@ export const SafetyCenterScreen: React.FC = () => {
                         Reportes de la Comunidad
                         <span className="material-symbols-outlined text-blue-500" style={{ fontSize: 24 }}>groups</span>
                     </h2>
-                    <button className="text-sm font-semibold text-primary hover:underline">Ver Todo</button>
+                    <button
+                        onClick={() => setIsReporting(true)}
+                        className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                        Reportar
+                    </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {communityReports.map(scam => (
-                        <div key={scam.id} className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 hover:border-primary/30 transition-colors">
-                            <div className="flex items-center gap-3 mb-3">
-                                <img src={scam.avatar_url || `https://ui-avatars.com/api/?name=${scam.user_name}&background=random`} alt={scam.user_name} className="size-10 rounded-full bg-gray-200 object-cover" />
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-sm font-bold text-[#111815] dark:text-white">{scam.user_name}</p>
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${scam.platform === 'Facebook' ? 'bg-blue-100 text-blue-700' :
+                {communityReports.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {communityReports.map(scam => (
+                            <div key={scam.id} className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 hover:border-primary/30 transition-colors">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <img
+                                        src={scam.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${scam.profiles?.username || 'User'}&background=random`}
+                                        alt={scam.profiles?.username || 'User'}
+                                        className="size-10 rounded-full bg-gray-200 object-cover"
+                                    />
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-bold text-[#111815] dark:text-white">
+                                                {scam.profiles?.username || 'Usuario Anónimo'}
+                                            </p>
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${scam.platform === 'Facebook' ? 'bg-blue-100 text-blue-700' :
                                                 scam.platform === 'WhatsApp' ? 'bg-green-100 text-green-700' :
                                                     scam.platform === 'Instagram' ? 'bg-pink-100 text-pink-700' : 'bg-blue-50 text-blue-600'
-                                            }`}>
-                                            {scam.platform}
-                                        </span>
+                                                }`}>
+                                                {scam.platform}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-400">
+                                            {new Date(scam.created_at).toLocaleDateString()}
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-gray-400">{scam.date_posted}</p>
+                                </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug mb-3">
+                                    "{scam.content}"
+                                </p>
+                                <div className="flex items-center gap-4 text-gray-400 text-xs font-medium">
+                                    <div className="flex items-center gap-1 hover:text-red-500 cursor-pointer transition-colors">
+                                        <span className="material-symbols-outlined text-[16px]">favorite</span>
+                                        {scam.likes || 0}
+                                    </div>
+                                    <div className="flex items-center gap-1 hover:text-blue-500 cursor-pointer transition-colors">
+                                        <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
+                                        Comentar
+                                    </div>
+                                    <div className="ml-auto flex items-center gap-1">
+                                        {currentUser && currentUser.id === scam.user_id && (
+                                            <div className="flex items-center gap-2 mr-3 border-r border-gray-200 dark:border-gray-700 pr-3">
+                                                <button
+                                                    onClick={() => handleOpenEdit(scam)}
+                                                    className="text-gray-400 hover:text-primary transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteReport(scam.id)}
+                                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                                    title="Borrar"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-1 hover:text-gray-600 cursor-pointer transition-colors">
+                                            <span className="material-symbols-outlined text-[16px]">share</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug mb-3">
-                                "{scam.content}"
-                            </p>
-                            <div className="flex items-center gap-4 text-gray-400 text-xs font-medium">
-                                <div className="flex items-center gap-1 hover:text-red-500 cursor-pointer transition-colors">
-                                    <span className="material-symbols-outlined text-[16px]">favorite</span>
-                                    {scam.likes}
-                                </div>
-                                <div className="flex items-center gap-1 hover:text-blue-500 cursor-pointer transition-colors">
-                                    <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-                                    Comentar
-                                </div>
-                                <div className="ml-auto flex items-center gap-1 hover:text-gray-600 cursor-pointer transition-colors">
-                                    <span className="material-symbols-outlined text-[16px]">share</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-8 bg-white dark:bg-card-dark rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                        <span className="material-symbols-outlined text-4xl text-gray-300 mb-2">campaign</span>
+                        <p className="text-gray-500 dark:text-gray-400">Aún no hay reportes de la comunidad.</p>
+                        <button
+                            onClick={() => setIsReporting(true)}
+                            className="mt-2 text-primary font-semibold hover:underline"
+                        >
+                            ¡Sé el primero en reportar!
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="px-4 pt-4 w-full max-w-5xl mx-auto">
@@ -317,7 +464,7 @@ export const SafetyCenterScreen: React.FC = () => {
                 </div>
             </div>
 
-            {/* Detail Modal */}
+            {/* Detail Alert Modal */}
             {selectedAlert && (
                 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedAlert(null)}>
                     <div
@@ -415,6 +562,77 @@ export const SafetyCenterScreen: React.FC = () => {
                                     Cerrar
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Report Modal */}
+            {isReporting && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onClick={handleCloseModal}>
+                    <div
+                        className="bg-white dark:bg-card-dark w-full max-w-md rounded-2xl shadow-2xl p-6 animate-scale-up"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold dark:text-white flex items-center gap-2">
+                                <span className="material-symbols-outlined text-red-500">warning</span>
+                                {editingReport ? 'Editar Reporte' : 'Reportar Estafa'}
+                            </h3>
+                            <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Plataforma</label>
+                                <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                                    {['WhatsApp', 'Facebook', 'Instagram', 'Otro'].map(platform => (
+                                        <button
+                                            key={platform}
+                                            onClick={() => setNewReportPlatform(platform)}
+                                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${newReportPlatform === platform
+                                                ? 'bg-white dark:bg-card-dark text-primary shadow-sm'
+                                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                                }`}
+                                        >
+                                            {platform}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    Descripción
+                                    <span className="text-red-500 ml-1">*</span>
+                                </label>
+                                <textarea
+                                    value={newReportContent}
+                                    onChange={(e) => setNewReportContent(e.target.value)}
+                                    placeholder="¿Qué pasó? Describe la estafa, el número de teléfono o el perfil..."
+                                    className="w-full h-32 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent resize-none dark:text-white"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleSubmitReport}
+                                disabled={isSubmittingReport || !newReportContent.trim()}
+                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                            >
+                                {isSubmittingReport ? (
+                                    <>
+                                        <span className="material-symbols-outlined animate-spin" style={{ fontSize: 20 }}>refresh</span>
+                                        Enviando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>send</span>
+                                        {editingReport ? 'Actualizar' : 'Enviar Reporte'}
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
