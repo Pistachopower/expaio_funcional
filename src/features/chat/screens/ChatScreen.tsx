@@ -66,7 +66,7 @@ export const ChatScreen: React.FC = () => {
                 const newMessages = [...prev];
                 const lastMsg = newMessages[newMessages.length - 1];
                 if (lastMsg && lastMsg.text === '') {
-                    lastMsg.text = 'Lo siento, hubo un error al conectar. Por favor intenta de nuevo.';
+                    lastMsg.text = 'Lo siento, hubo un error al conectar. Es posible que no te queden créditos. Por favor intenta de nuevo.';
                     lastMsg.isError = true;
                 }
                 return newMessages;

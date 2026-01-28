@@ -21,7 +21,7 @@ export class GeminiService {
     if (!this.genAI) return;
 
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       systemInstruction: `Eres el 'Asistente ExpaIO', un asistente amigable, empático y experto para personas que acaban de mudarse a Suiza. 
         Ayudas con temas como: vivienda (alquiler, depósitos, estafas), seguros (Lamal, franquicias), impuestos (Quellensteuer), leyes laborales e integración general.
         
@@ -93,7 +93,7 @@ export class GeminiService {
 
       // Use a separate model instance for single generation if needed, or define schema
       const model = this.genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         generationConfig: {
           responseMimeType: "application/json",
           // Note: responseSchema in the new SDK might require defined Schema objects, 

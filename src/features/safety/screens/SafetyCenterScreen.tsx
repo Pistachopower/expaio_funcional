@@ -15,6 +15,41 @@ interface SafetyAlert {
     link?: string;
 }
 
+interface SocialScamReport {
+    id: string;
+    platform: string;
+    user_name: string;
+    content: string;
+    date_posted: string;
+    likes: number;
+    avatar_url: string;
+}
+
+const getRelevantImage = (title: string, description: string): string => {
+    const text = (title + ' ' + description).toLowerCase();
+
+    if (text.includes('phishing') || text.includes('banco') || text.includes('sms')) {
+        return 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1000'; // Hacker/Code
+    }
+    if (text.includes('paquete') || text.includes('correo') || text.includes('post')) {
+        return 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&q=80&w=1000'; // Packages
+    }
+    if (text.includes('inversión') || text.includes('crypto') || text.includes('dinero')) {
+        return 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?auto=format&fit=crop&q=80&w=1000'; // Money/Crypto
+    }
+    if (text.includes('ceo') || text.includes('ejecutivo') || text.includes('empresa')) {
+        return 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=1000'; // Business meeting
+    }
+    if (text.includes('romance') || text.includes('amor') || text.includes('pareja')) {
+        return 'https://images.unsplash.com/photo-1516726817505-f5ed825624d8?auto=format&fit=crop&q=80&w=1000'; // Silhouette/Romance
+    }
+    if (text.includes('soporte') || text.includes('técnico') || text.includes('llamada')) {
+        return 'https://images.unsplash.com/photo-1556745757-8d76bdb6984b?auto=format&fit=crop&q=80&w=1000'; // Call center
+    }
+
+    return 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&q=80&w=1000'; // Generic tech/security
+};
+
 export const SafetyCenterScreen: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -22,9 +57,11 @@ export const SafetyCenterScreen: React.FC = () => {
     const [alerts, setAlerts] = useState<SafetyAlert[]>([]);
     const [isLoadingAlerts, setIsLoadingAlerts] = useState(true);
     const [selectedAlert, setSelectedAlert] = useState<SafetyAlert | null>(null);
+    const [communityReports, setCommunityReports] = useState<SocialScamReport[]>([]);
 
     useEffect(() => {
         fetchAlerts();
+        fetchCommunityReports();
     }, []);
 
     const fetchAlerts = async () => {
@@ -40,6 +77,20 @@ export const SafetyCenterScreen: React.FC = () => {
             console.error('Error fetching safety alerts:', error);
         } finally {
             setIsLoadingAlerts(false);
+        }
+    };
+
+    const fetchCommunityReports = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('community_reports')
+                .select('*')
+                .order('date_posted', { ascending: false }); // Assuming 'date_posted' is the column name
+
+            if (error) throw error;
+            setCommunityReports(data || []);
+        } catch (error) {
+            console.error('Error fetching community reports:', error);
         }
     };
 
@@ -170,8 +221,8 @@ export const SafetyCenterScreen: React.FC = () => {
                                 className="snap-center shrink-0 w-[85%] max-w-[320px] md:w-full md:max-w-none bg-white dark:bg-card-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col hover:border-primary/30 transition-colors text-left"
                             >
                                 <div
-                                    className="h-32 w-full bg-cover bg-center relative"
-                                    style={{ backgroundImage: `url('${alert.image_url || 'https://picsum.photos/seed/' + alert.id + '/600/300'}')` }}
+                                    className="h-32 w-full bg-cover bg-center relative group-hover:scale-105 transition-transform duration-500"
+                                    style={{ backgroundImage: `url('${alert.image_url || getRelevantImage(alert.title, alert.description)}')` }}
                                 >
                                     <div className={`absolute top-3 left-3 ${getPriorityColor(alert.priority)} text-white text-xs font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1`}>
                                         <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{getPriorityIcon(alert.priority)}</span>
@@ -191,6 +242,55 @@ export const SafetyCenterScreen: React.FC = () => {
                         <p>{searchQuery ? 'No se encontraron alertas con ese término.' : 'No hay alertas activas en este momento. ¡Sigue así!'}</p>
                     </div>
                 )}
+            </div>
+
+            {/* Reported Scams Section */}
+            <div className="w-full max-w-5xl mx-auto pt-2 pb-6 px-4">
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-[22px] font-bold leading-tight tracking-tight dark:text-white flex items-center gap-2">
+                        Reportes de la Comunidad
+                        <span className="material-symbols-outlined text-blue-500" style={{ fontSize: 24 }}>groups</span>
+                    </h2>
+                    <button className="text-sm font-semibold text-primary hover:underline">Ver Todo</button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {communityReports.map(scam => (
+                        <div key={scam.id} className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 hover:border-primary/30 transition-colors">
+                            <div className="flex items-center gap-3 mb-3">
+                                <img src={scam.avatar_url || `https://ui-avatars.com/api/?name=${scam.user_name}&background=random`} alt={scam.user_name} className="size-10 rounded-full bg-gray-200 object-cover" />
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-bold text-[#111815] dark:text-white">{scam.user_name}</p>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${scam.platform === 'Facebook' ? 'bg-blue-100 text-blue-700' :
+                                                scam.platform === 'WhatsApp' ? 'bg-green-100 text-green-700' :
+                                                    scam.platform === 'Instagram' ? 'bg-pink-100 text-pink-700' : 'bg-blue-50 text-blue-600'
+                                            }`}>
+                                            {scam.platform}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-400">{scam.date_posted}</p>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug mb-3">
+                                "{scam.content}"
+                            </p>
+                            <div className="flex items-center gap-4 text-gray-400 text-xs font-medium">
+                                <div className="flex items-center gap-1 hover:text-red-500 cursor-pointer transition-colors">
+                                    <span className="material-symbols-outlined text-[16px]">favorite</span>
+                                    {scam.likes}
+                                </div>
+                                <div className="flex items-center gap-1 hover:text-blue-500 cursor-pointer transition-colors">
+                                    <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
+                                    Comentar
+                                </div>
+                                <div className="ml-auto flex items-center gap-1 hover:text-gray-600 cursor-pointer transition-colors">
+                                    <span className="material-symbols-outlined text-[16px]">share</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <div className="px-4 pt-4 w-full max-w-5xl mx-auto">
@@ -225,7 +325,7 @@ export const SafetyCenterScreen: React.FC = () => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Image Header */}
-                        <div className="relative h-64 w-full bg-cover bg-center" style={{ backgroundImage: `url('${selectedAlert.image_url || 'https://picsum.photos/seed/' + selectedAlert.id + '/600/300'}')` }}>
+                        <div className="relative h-64 w-full bg-cover bg-center" style={{ backgroundImage: `url('${selectedAlert.image_url || getRelevantImage(selectedAlert.title, selectedAlert.description)}')` }}>
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                             <button
                                 onClick={() => setSelectedAlert(null)}

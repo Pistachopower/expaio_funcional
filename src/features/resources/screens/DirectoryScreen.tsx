@@ -10,6 +10,9 @@ interface DirectoryItem {
     description: string;
     image: string;
     verified: boolean;
+    phoneNumber?: string;
+    email?: string;
+    website?: string;
 }
 
 const DIRECTORY_ITEMS: DirectoryItem[] = [
@@ -18,56 +21,107 @@ const DIRECTORY_ITEMS: DirectoryItem[] = [
         name: 'Cruz Roja Suiza',
         type: 'Medical',
         tag: 'Humanitario',
-        location: '2.5 km',
-        description: 'Ayuda humanitaria de emergencia y soporte médico integral.',
-        image: 'https://picsum.photos/seed/redcross/200',
-        verified: true
+        location: 'Zürich / Nacional',
+        description: 'Ayuda humanitaria, integración y soporte médico. Servicios específicos para migrantes.',
+        image: 'https://www.redcross.ch/sites/default/files/styles/16_9_1920_1080/public/2021-02/srk_logo_cmyk.png?h=3e2d6706&itok=B1u3fQ4_',
+        verified: true,
+        phoneNumber: '044 388 25 25',
+        email: 'info@srk-zuerich.ch',
+        website: 'https://www.srk-zuerich.ch'
     },
     {
         id: '2',
-        name: 'Zürich Deutschkurse',
-        type: 'Education',
-        tag: 'Alemán',
-        location: '1.2 km',
-        description: 'Escuela oficial de alemán. Cursos intensivos A1-C1 y dialecto suizo para recién llegados.',
-        image: 'https://picsum.photos/seed/germanclass/200',
-        verified: true
+        name: 'Freiplatzaktion Zürich',
+        type: 'Legal',
+        tag: 'Legal Gratuito',
+        location: 'Zürich',
+        description: 'Asesoramiento jurídico gratuito y representación para refugiados y migrantes. Hablan español.',
+        image: 'https://freiplatzaktion.ch/wp-content/uploads/2020/09/Logo_Freiplatzaktion_Zuerich.png',
+        verified: true,
+        phoneNumber: '044 245 54 20',
+        email: 'info@freiplatzaktion.ch',
+        website: 'https://freiplatzaktion.ch'
     },
     {
         id: '3',
-        name: 'Sarah Smith Education',
-        type: 'Education',
-        tag: 'Inglés',
-        location: 'Online / Zürich',
-        description: 'Clases particulares de inglés de negocios y preparación para exámenes. Profesora nativa.',
-        image: 'https://picsum.photos/seed/englishteacher/200',
-        verified: true
+        name: 'Infodona / Info-Desk',
+        type: 'Other',
+        tag: 'Asesoría',
+        location: 'Zürich',
+        description: 'Servicio municipal de asesoría para migrantes en español. Ayuda con permisos, familia y trabajo.',
+        image: 'https://www.stadt-zuerich.ch/content/dam/stzh/portal/images/logos/stadt-zuerich-logo.svg',
+        verified: true,
+        phoneNumber: '044 412 84 00',
+        website: 'https://www.stadt-zuerich.ch/integrationsfoerderung'
     },
     {
         id: '4',
-        name: 'LegalHelp Zürich',
+        name: 'CCSI Genève',
         type: 'Legal',
-        tag: 'Legal',
-        location: 'Zürich HB',
-        description: 'Asesoría jurídica gratuita para inmigrantes sobre permisos de residencia y trabajo.',
-        image: 'https://picsum.photos/seed/lawyer/200',
-        verified: true
+        tag: 'Apoyo Migrante',
+        location: 'Genève',
+        description: 'Centro de Contacto Suizos-Inmigrantes. Defensa de derechos y apoyo social en español.',
+        image: 'https://ccsi.ch/wp-content/themes/ccsi/img/logo.png',
+        verified: true,
+        phoneNumber: '022 304 48 60',
+        email: 'info@ccsi.ch',
+        website: 'https://ccsi.ch'
     },
     {
         id: '5',
-        name: 'Hans Müller - Tutor',
-        type: 'Education',
-        tag: 'Alemán',
-        location: 'Bern',
-        description: 'Profesor certificado de alemán. Especializado en integración cultural y lingüística.',
-        image: 'https://picsum.photos/seed/tutorhans/200',
-        verified: true
+        name: 'Latinas en Suiza',
+        type: 'Other',
+        tag: 'Comunidad',
+        location: 'Online / Nacional',
+        description: 'Plataforma de apoyo, conexión y empoderamiento para mujeres latinoamericanas en Suiza.',
+        image: 'https://latinasensuiza.ch/wp-content/uploads/2021/04/Logo-Latinas-en-Suiza-1.png',
+        verified: true,
+        email: 'hola@latinasensuiza.ch',
+        website: 'https://latinasensuiza.ch'
+    },
+    {
+        id: '6',
+        name: 'Caritas Suiza',
+        type: 'Other',
+        tag: 'Ayuda Social',
+        location: 'Luzern / Nacional',
+        description: 'Apoyo a personas en situación de pobreza y refugiados. Consultas sociales y jurídicas.',
+        image: 'https://www.caritas.ch/assets/images/logo/caritas_logo.svg',
+        verified: true,
+        phoneNumber: '041 419 22 22',
+        email: 'info@caritas.ch',
+        website: 'https://www.caritas.ch'
+    },
+    {
+        id: '7',
+        name: 'Acoge Zúrich',
+        type: 'Other',
+        tag: 'Integración',
+        location: 'Zürich',
+        description: 'Acompañamiento voluntario para la integración de hispanohablantes recién llegados.',
+        image: 'https://acoge.ch/wp-content/uploads/2021/05/logo-acoge-1.png',
+        verified: true,
+        email: 'info@acoge.ch',
+        website: 'https://acoge.ch'
+    },
+    {
+        id: '8',
+        name: 'HSS Group',
+        type: 'Legal',
+        tag: 'Administrativo',
+        location: 'Bern / Online',
+        description: 'Agencia hispano-suiza. Asesoramiento legal, seguros, impuestos y trámites administrativos.',
+        image: 'https://hssgroup.ch/wp-content/uploads/2020/06/Logo-HSS-Group.png',
+        verified: true,
+        phoneNumber: '031 351 44 44',
+        email: 'info@hssgroup.ch',
+        website: 'https://hssgroup.ch'
     }
 ];
 
 export const DirectoryScreen: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeFilter, setActiveFilter] = useState<'Todos' | 'Legal' | 'Medical' | 'Education'>('Todos');
+    const [activeFilter, setActiveFilter] = useState<'Todos' | 'Legal' | 'Medical' | 'Education' | 'Other'>('Todos');
 
     const filteredItems = DIRECTORY_ITEMS.filter(item => {
         const matchesSearch =
@@ -100,7 +154,7 @@ export const DirectoryScreen: React.FC = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="flex w-full min-w-0 flex-1 resize-none bg-transparent text-[#111815] dark:text-white focus:outline-0 border-none h-full placeholder:text-gray-400 dark:placeholder:text-gray-600 px-2 text-base font-normal leading-normal"
-                            placeholder="Buscar profesores, ayuda legal..."
+                            placeholder="Buscar ayuda legal, médica, ONGs..."
                         />
                         {searchQuery && (
                             <button onClick={() => setSearchQuery('')} className="pr-4 text-gray-400 hover:text-gray-600">
@@ -120,13 +174,6 @@ export const DirectoryScreen: React.FC = () => {
                         <p className="text-sm font-semibold leading-normal">Todos</p>
                     </button>
                     <button
-                        onClick={() => setActiveFilter('Education')}
-                        className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-colors ${activeFilter === 'Education' ? 'bg-primary text-white' : 'bg-white dark:bg-card-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-                    >
-                        <span className="material-symbols-outlined text-base">school</span>
-                        <p className={`text-sm font-medium ${activeFilter === 'Education' ? 'text-white' : 'text-[#111815] dark:text-white'}`}>Educación</p>
-                    </button>
-                    <button
                         onClick={() => setActiveFilter('Legal')}
                         className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-colors ${activeFilter === 'Legal' ? 'bg-primary text-white' : 'bg-white dark:bg-card-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                     >
@@ -140,6 +187,20 @@ export const DirectoryScreen: React.FC = () => {
                         <span className="material-symbols-outlined text-base">medical_services</span>
                         <p className={`text-sm font-medium ${activeFilter === 'Medical' ? 'text-white' : 'text-[#111815] dark:text-white'}`}>Médico</p>
                     </button>
+                    <button
+                        onClick={() => setActiveFilter('Education')}
+                        className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-colors ${activeFilter === 'Education' ? 'bg-primary text-white' : 'bg-white dark:bg-card-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    >
+                        <span className="material-symbols-outlined text-base">school</span>
+                        <p className={`text-sm font-medium ${activeFilter === 'Education' ? 'text-white' : 'text-[#111815] dark:text-white'}`}>Educación</p>
+                    </button>
+                    <button
+                        onClick={() => setActiveFilter('Other')}
+                        className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-colors ${activeFilter === 'Other' ? 'bg-primary text-white' : 'bg-white dark:bg-card-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    >
+                        <span className="material-symbols-outlined text-base">diversity_3</span>
+                        <p className={`text-sm font-medium ${activeFilter === 'Other' ? 'text-white' : 'text-[#111815] dark:text-white'}`}>Comunidad</p>
+                    </button>
                 </div>
             </div>
 
@@ -148,7 +209,7 @@ export const DirectoryScreen: React.FC = () => {
                     filteredItems.map(item => (
                         <div key={item.id} className="flex flex-col gap-3 bg-white dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 animate-fade-in hover:border-primary/30 transition-colors">
                             <div className="flex items-start gap-4">
-                                <div className="shrink-0 bg-center bg-no-repeat bg-cover rounded-lg size-[60px] bg-gray-100 dark:bg-gray-800 relative overflow-hidden" style={{ backgroundImage: `url("${item.image}")` }}></div>
+                                <div className="shrink-0 bg-contain bg-center bg-no-repeat rounded-lg size-[60px] bg-white relative overflow-hidden border border-gray-100 dark:border-gray-700" style={{ backgroundImage: `url("${item.image}")` }}></div>
                                 <div className="flex flex-1 flex-col">
                                     <div className="flex items-center gap-1 mb-1">
                                         <h3 className="text-[#111815] dark:text-white text-base font-bold leading-tight">{item.name}</h3>
@@ -157,17 +218,34 @@ export const DirectoryScreen: React.FC = () => {
                                         )}
                                     </div>
                                     <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide mb-1">{item.tag} • {item.location}</p>
-                                    <p className="text-gray-700 dark:text-gray-300 text-sm font-normal leading-snug line-clamp-2">{item.description}</p>
+                                    <p className="text-gray-700 dark:text-gray-300 text-sm font-normal leading-snug line-clamp-3">{item.description}</p>
                                 </div>
                             </div>
                             <div className="h-px bg-gray-100 dark:bg-gray-800 w-full my-1"></div>
                             <div className="flex items-center justify-between gap-2">
-                                <button className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-card-dark text-[#111815] dark:text-white text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700">
-                                    <span className="material-symbols-outlined text-[18px]">call</span> Contactar
-                                </button>
-                                <button className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-card-dark text-[#111815] dark:text-white text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700">
-                                    <span className="material-symbols-outlined text-[18px]">map</span> Mapa
-                                </button>
+                                {item.phoneNumber ? (
+                                    <a href={`tel:${item.phoneNumber.replace(/\s/g, '')}`} className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-card-dark text-[#111815] dark:text-white text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                        <span className="material-symbols-outlined text-[18px]">call</span> Llamar
+                                    </a>
+                                ) : item.email ? (
+                                    <a href={`mailto:${item.email}`} className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-card-dark text-[#111815] dark:text-white text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                        <span className="material-symbols-outlined text-[18px]">mail</span> Email
+                                    </a>
+                                ) : (
+                                    <button disabled className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-card-dark text-gray-400 text-sm font-medium cursor-not-allowed">
+                                        <span className="material-symbols-outlined text-[18px]">block</span> No Contacto
+                                    </button>
+                                )}
+
+                                {item.website ? (
+                                    <a href={item.website} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-card-dark text-[#111815] dark:text-white text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                        <span className="material-symbols-outlined text-[18px]">public</span> Web
+                                    </a>
+                                ) : (
+                                    <button className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 dark:bg-card-dark text-[#111815] dark:text-white text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700">
+                                        <span className="material-symbols-outlined text-[18px]">map</span> Mapa
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))
