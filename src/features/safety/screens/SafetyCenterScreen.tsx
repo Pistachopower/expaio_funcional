@@ -553,7 +553,7 @@ export const SafetyCenterScreen: React.FC = () => {
                                     className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
                                 >
                                     <span className="material-symbols-outlined" style={{ fontSize: 20 }}>verified_user</span>
-                                    Verificar Oferta
+                                    Verificar Oferta hola
                                 </Link>
                                 <button
                                     onClick={() => setSelectedAlert(null)}
