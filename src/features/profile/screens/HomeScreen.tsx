@@ -112,7 +112,7 @@ export const HomeScreen: React.FC = () => {
                             </div>
                         </Link>
                         
-                        <Link to="/" className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-3 hover:border-primary/50 transition-colors group">
+                        <Link to="/audios-integracion" className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-3 hover:border-primary/50 transition-colors group">
                             <div className="size-10 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-[#ff6600] group-hover:scale-110 transition-transform">
                                 <span className="material-symbols-outlined" style={{ fontSize: 24 }}>psychology</span>
                             </div>

@@ -18,6 +18,7 @@ import { TransportGuideScreen } from './features/resources/screens/TransportGuid
 import { ChatScreen } from './features/chat/screens/ChatScreen';
 import { AuthScreen } from './features/auth/screens/AuthScreen';
 import { AboutUsScreen } from './features/about/screens/AboutUsScreen';
+import AudioScreen from './features/resources/screens/AudioScreen';
 
 import { useAuth } from './context/AuthContext';
 
@@ -65,6 +66,7 @@ const App: React.FC = () => {
                                 <Route path="/transport-guide" element={<ProtectedRoute><TransportGuideScreen /></ProtectedRoute>} />
                                 <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
                                 <Route path="/chat" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
+                                <Route path="/audios-integracion" element={<ProtectedRoute><AudioScreen /></ProtectedRoute>} />
                             </Routes>
                         </div>
                         {/* Spacer for bottom nav on mobile */}

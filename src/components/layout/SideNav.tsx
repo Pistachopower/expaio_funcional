@@ -21,6 +21,7 @@ export const SideNav: React.FC = () => {
                 <NavLink to="/safety" icon="shield" label="Seguridad" isActive={getActive('/safety')} vertical />
                 <NavLink to="/directory" icon="list_alt" label="Directorio" isActive={getActive('/directory')} vertical />
                 <NavLink to="/chat" icon="smart_toy" label="Asistente IA" isActive={getActive('/chat')} vertical />
+                <NavLink to="/audios-integracion" icon="psychology" label="Integración" isActive={getActive('/audios-integracion')} vertical />
                 <NavLink to="/about" icon="info" label="Sobre Nosotros" isActive={getActive('/about')} vertical />
             </nav>
 

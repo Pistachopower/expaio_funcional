@@ -6,7 +6,7 @@ export const BottomNav: React.FC = () => {
     const location = useLocation();
     const getActive = (path: string) => location.pathname === path;
 
-    const showNav = ['/', '/directory', '/profile', '/safety', '/checklist', '/about'].includes(location.pathname);
+    const showNav = ['/', '/directory', '/profile', '/safety', '/checklist', '/about', '/audios-integracion'].includes(location.pathname);
     if (!showNav) return null;
 
     return (
