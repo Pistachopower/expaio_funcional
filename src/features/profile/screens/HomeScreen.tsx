@@ -111,6 +111,17 @@ export const HomeScreen: React.FC = () => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Ayuda 24/7</p>
                             </div>
                         </Link>
+                        
+                        <Link to="/" className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-3 hover:border-primary/50 transition-colors group">
+                            <div className="size-10 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-[#ff6600] group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>psychology</span>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-[#111815] dark:text-white">Integración</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Adaptación y Mente</p>
+                            </div>
+                        </Link>
+
                     </div>
                 </div>
 
