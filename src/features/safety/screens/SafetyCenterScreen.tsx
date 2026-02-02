@@ -467,11 +467,11 @@ export const SafetyCenterScreen: React.FC = () => {
             {selectedAlert && (
                 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedAlert(null)}>
                     <div
-                        className="bg-white dark:bg-card-dark w-full md:max-w-2xl md:rounded-2xl rounded-t-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-slide-up"
+                        className="bg-white dark:bg-card-dark w-full md:max-w-2xl md:rounded-2xl rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-up"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Image Header */}
-                        <div className="relative h-64 w-full bg-cover bg-center" style={{ backgroundImage: `url('${selectedAlert.image_url || getRelevantImage(selectedAlert.title, selectedAlert.description)}')` }}>
+                        {/* Image Header - Fixed height */}
+                        <div className="relative h-48 md:h-64 w-full bg-cover bg-center shrink-0 rounded-t-3xl md:rounded-t-2xl overflow-hidden" style={{ backgroundImage: `url('${selectedAlert.image_url || getRelevantImage(selectedAlert.title, selectedAlert.description)}')` }}>
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                             <button
                                 onClick={() => setSelectedAlert(null)}
@@ -488,8 +488,8 @@ export const SafetyCenterScreen: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Content */}
-                        <div className="p-6">
+                        {/* Scrollable Content */}
+                        <div className="flex-1 overflow-y-auto p-6 pt-0">
                             <p className="text-base text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">{selectedAlert.description}</p>
 
                             {selectedAlert.details && (
@@ -544,16 +544,16 @@ export const SafetyCenterScreen: React.FC = () => {
                                     </div>
                                 </div>
                             )}
+                        </div>
 
-                            {/* Action Buttons */}
-                            <div className="mt-6 flex gap-3">
-                                <button
-                                    onClick={() => setSelectedAlert(null)}
-                                    className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-colors"
-                                >
-                                    Cerrar
-                                </button>
-                            </div>
+                        {/* Fixed Action Button */}
+                        <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-card-dark">
+                            <button
+                                onClick={() => setSelectedAlert(null)}
+                                className="w-full px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-colors"
+                            >
+                                Cerrar
+                            </button>
                         </div>
                     </div>
                 </div>
