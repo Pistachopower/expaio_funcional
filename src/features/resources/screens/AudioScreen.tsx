@@ -336,7 +336,7 @@ const AudioScreen: React.FC = () => {
 
       {/* Floating Player */}
       {current && (
-        <div className="fixed left-0 right-0 bottom-[80px] sm:bottom-6 px-3 sm:px-0 z-50 animate-slide-up flex justify-center sm:pl-[200px]">
+        <div className="fixed left-0 right-0 bottom-[100px] sm:bottom-6 px-3 sm:px-0 z-50 animate-slide-up flex justify-center sm:pl-[200px]">
           <div className="w-full sm:w-[400px] sm:max-w-md bg-[#1c1c1e] backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/50 overflow-hidden border border-white/10">
             {/* Progress bar top */}
             <div className="h-1 bg-white/10 w-full">
