@@ -6,7 +6,7 @@ export const BottomNav: React.FC = () => {
     const location = useLocation();
     const getActive = (path: string) => location.pathname === path;
 
-    const showNav = ['/', '/directory', '/profile', '/safety', '/checklist', '/about', '/audios-integracion'].includes(location.pathname);
+    const showNav = ['/', '/directory', '/profile', '/safety', '/checklist', '/about', '/audios-integracion', '/guia-inicial'].includes(location.pathname);
     if (!showNav) return null;
 
     return (
@@ -21,7 +21,6 @@ export const BottomNav: React.FC = () => {
             </div>
 
             <NavLink to="/safety" icon="shield" label="Seguridad" isActive={getActive('/safety')} />
-            <NavLink to="/about" icon="info" label="Info" isActive={getActive('/about')} />
             <NavLink to="/profile" icon="person" label="Perfil" isActive={getActive('/profile')} />
         </div>
     );

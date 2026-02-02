@@ -19,6 +19,7 @@ import { ChatScreen } from './features/chat/screens/ChatScreen';
 import { AuthScreen } from './features/auth/screens/AuthScreen';
 import { AboutUsScreen } from './features/about/screens/AboutUsScreen';
 import AudioScreen from './features/resources/screens/AudioScreen';
+import { InitialGuideScreen } from './features/resources/screens/InitialGuideScreen';
 
 import { useAuth } from './context/AuthContext';
 
@@ -67,6 +68,7 @@ const App: React.FC = () => {
                                 <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
                                 <Route path="/chat" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
                                 <Route path="/audios-integracion" element={<ProtectedRoute><AudioScreen /></ProtectedRoute>} />
+                                <Route path="/guia-inicial" element={<ProtectedRoute><InitialGuideScreen /></ProtectedRoute>} />
                             </Routes>
                         </div>
                         {/* Spacer for bottom nav on mobile */}

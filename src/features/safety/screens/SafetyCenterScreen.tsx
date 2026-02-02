@@ -303,7 +303,6 @@ export const SafetyCenterScreen: React.FC = () => {
                         Alertas Recientes
                         <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
                     </h2>
-                    <Link to="/offer-verifier" className="text-sm font-semibold text-primary hover:underline">Verificar Oferta</Link>
                 </div>
 
                 {isLoadingAlerts ? (
@@ -548,16 +547,9 @@ export const SafetyCenterScreen: React.FC = () => {
 
                             {/* Action Buttons */}
                             <div className="mt-6 flex gap-3">
-                                <Link
-                                    to="/offer-verifier"
-                                    className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>verified_user</span>
-                                    Verificar Oferta hola
-                                </Link>
                                 <button
                                     onClick={() => setSelectedAlert(null)}
-                                    className="px-6 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                    className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-colors"
                                 >
                                     Cerrar
                                 </button>

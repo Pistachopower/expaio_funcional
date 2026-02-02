@@ -75,6 +75,15 @@ export const HomeScreen: React.FC = () => {
                         />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <Link to="/guia-inicial" className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-3 hover:border-primary/50 transition-colors group">
+                            <div className="size-10 rounded-lg bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined">menu_book</span>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-[#111815] dark:text-white">Guía Inicial</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Primeros Pasos</p>
+                            </div>
+                        </Link>
                         <Link to="/calculator" className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-3 hover:border-primary/50 transition-colors group">
                             <div className="size-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
                                 <span className="material-symbols-outlined">calculate</span>
