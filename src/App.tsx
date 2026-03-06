@@ -17,6 +17,7 @@ import { JobGuideScreen } from './features/resources/screens/JobGuideScreen';
 import { TransportGuideScreen } from './features/resources/screens/TransportGuideScreen';
 import { ChatScreen } from './features/chat/screens/ChatScreen';
 import { AuthScreen } from './features/auth/screens/AuthScreen';
+import { UpdatePasswordScreen } from './features/auth/screens/UpdatePasswordScreen';
 import { AboutUsScreen } from './features/about/screens/AboutUsScreen';
 import AudioScreen from './features/resources/screens/AudioScreen';
 import { InitialGuideScreen } from './features/resources/screens/InitialGuideScreen';
@@ -49,6 +50,7 @@ const App: React.FC = () => {
                         <div className="min-h-full">
                             <Routes>
                                 <Route path="/login" element={<AuthScreen />} />
+                                <Route path="/update-password" element={<UpdatePasswordScreen />} />
                                 <Route path="/about" element={<AboutUsScreen />} />
 
                                 {/* Protected Routes */}

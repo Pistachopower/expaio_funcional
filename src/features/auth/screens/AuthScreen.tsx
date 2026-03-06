@@ -7,8 +7,8 @@ export const AuthScreen: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Auth Flow State: 'credentials' or 'onboarding'
-    const [authStep, setAuthStep] = useState<'credentials' | 'onboarding'>('credentials');
+    // Auth Flow State: 'credentials', 'onboarding', or 'forgotPassword'
+    const [authStep, setAuthStep] = useState<'credentials' | 'onboarding' | 'forgotPassword'>('credentials');
 
     // Credentials Form State
     const [email, setEmail] = useState('');
@@ -89,6 +89,25 @@ export const AuthScreen: React.FC = () => {
                 setIsLoading(false);
             }
         }
+    };
+
+    // --- Step 1.5: Handle Forgot Password Submission ---
+    const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+            redirectTo: `${window.location.origin}/update-password`,
+        });
+
+        if (error) {
+            console.error('Error sending password reset email:', error.message);
+            alert('Error al enviar el correo de recuperación: ' + error.message);
+        } else {
+            alert('Se ha enviado un correo con las instrucciones para recuperar tu contraseña.');
+            setAuthStep('credentials');
+        }
+        setIsLoading(false);
     };
 
     // --- Step 2: Handle Onboarding Submission ---
@@ -225,7 +244,18 @@ export const AuthScreen: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Contraseña</label>
+                                <div className="flex justify-between items-center mb-1.5 px-1">
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Contraseña</label>
+                                    {isLogin && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setAuthStep('forgotPassword')}
+                                            className="text-xs font-bold text-primary hover:underline focus:outline-none"
+                                        >
+                                            ¿Olvidaste tu contraseña?
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="relative">
                                     <input
                                         type={showPassword ? "text" : "password"}
@@ -288,6 +318,48 @@ export const AuthScreen: React.FC = () => {
                                         </>
                                     ) : (
                                         <>{isLogin ? 'Iniciar Sesión' : 'Siguiente Paso'}</>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {authStep === 'forgotPassword' && (
+                        <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 animate-slide-up">
+                            <div className="text-center mb-4">
+                                <h2 className="text-xl font-bold text-[#111815] dark:text-white">Recuperar Contraseña</h2>
+                                <p className="text-sm text-gray-500 mt-2">Ingresa tu correo electrónico y te enviaremos un enlace para restablecerla.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Email</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="hola@ejemplo.com"
+                                    className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
+                                />
+                            </div>
+
+                            <div className="pt-4 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setAuthStep('credentials')}
+                                    className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-base py-4 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isLoading || !email}
+                                    className="flex-[2] bg-primary text-[#11211a] font-bold text-base py-4 rounded-xl shadow-lg shadow-primary/20 hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                                >
+                                    {isLoading ? (
+                                        <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+                                    ) : (
+                                        'Enviar Enlace'
                                     )}
                                 </button>
                             </div>
