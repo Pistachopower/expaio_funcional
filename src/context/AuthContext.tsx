@@ -23,6 +23,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+            if (session && window.location.hash.includes('access_token')) {
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
         });
 
         // Listen for changes on auth state (logged in, signed out, etc.)
@@ -30,6 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+            if (session && window.location.hash.includes('access_token')) {
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
         });
 
         return () => subscription.unsubscribe();

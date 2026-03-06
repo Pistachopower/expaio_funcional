@@ -1,5 +1,5 @@
 import React from 'react';
-import { MemoryRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { BottomNav, SideNav, ThemeToggle } from './components';
 import { HomeScreen } from './features/profile/screens/HomeScreen';
 import { ChecklistScreen } from './features/checklist/screens/ChecklistScreen';
