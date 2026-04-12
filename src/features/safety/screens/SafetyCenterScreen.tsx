@@ -6,25 +6,25 @@ import { supabase } from '../../../lib/supabaseClient';
 
 interface SafetyAlert {
     id: string;
-    title: string;
-    description: string;
-    details?: string;
-    source?: string;
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-    image_url?: string;
+    titulo: string;
+    descripcion: string;
+    detalles?: string;
+    fuente?: string;
+    prioridad: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    imagen_url?: string;
     link?: string;
 }
 
 interface SocialScamReport {
     id: string;
-    platform: string;
-    content: string;
-    created_at: string;
+    plataforma: string;
+    contenido: string;
+    fecha_creacion: string;
     likes: number;
-    user_id: string;
-    profiles: {
-        username: string;
-        avatar_url: string;
+    usuario_id: string;
+    perfiles: {
+        nombre: string;
+        foto_url: string;
     } | null;
 }
 
@@ -79,9 +79,9 @@ export const SafetyCenterScreen: React.FC = () => {
     const fetchAlerts = async () => {
         try {
             const { data, error } = await supabase
-                .from('safety_alerts')
+                .from('alertas')
                 .select('*')
-                .order('created_at', { ascending: false });
+                .order('fecha_creacion', { ascending: false });
 
             if (error) throw error;
             setAlerts(data || []);
@@ -96,15 +96,15 @@ export const SafetyCenterScreen: React.FC = () => {
         try {
             // Join with profiles table to get username and avatar
             const { data, error } = await supabase
-                .from('community_reports')
+                .from('reportes_comunitarios')
                 .select(`
                     *,
-                    profiles:user_id (
-                        username,
-                        avatar_url
+                    perfiles:usuario_id (
+                        nombre,
+                        foto_url
                     )
                 `)
-                .order('created_at', { ascending: false });
+                .order('fecha_creacion', { ascending: false });
 
             if (error) throw error;
             setCommunityReports(data || []);
@@ -142,10 +142,10 @@ export const SafetyCenterScreen: React.FC = () => {
             if (editingReport) {
                 // Update existing report
                 const { error } = await supabase
-                    .from('community_reports')
+                    .from('reportes_comunitarios')
                     .update({
-                        platform: newReportPlatform,
-                        content: newReportContent,
+                        plataforma: newReportPlatform,
+                        contenido: newReportContent,
                     })
                     .eq('id', editingReport.id);
 
@@ -153,11 +153,11 @@ export const SafetyCenterScreen: React.FC = () => {
             } else {
                 // Create new report
                 const { error } = await supabase
-                    .from('community_reports')
+                    .from('reportes_comunitarios')
                     .insert({
-                        user_id: user.id,
-                        platform: newReportPlatform,
-                        content: newReportContent,
+                        usuario_id: user.id,
+                        plataforma: newReportPlatform,
+                        contenido: newReportContent,
                     });
 
                 if (error) throw error;
@@ -182,7 +182,7 @@ export const SafetyCenterScreen: React.FC = () => {
 
         try {
             const { error } = await supabase
-                .from('community_reports')
+                .from('reportes_comunitarios')
                 .delete()
                 .eq('id', reportId);
 
@@ -196,8 +196,8 @@ export const SafetyCenterScreen: React.FC = () => {
 
     const handleOpenEdit = (report: SocialScamReport) => {
         setEditingReport(report);
-        setNewReportPlatform(report.platform);
-        setNewReportContent(report.content);
+        setNewReportPlatform(report.plataforma);
+        setNewReportContent(report.contenido);
         setIsReporting(true);
     };
 
@@ -228,8 +228,8 @@ export const SafetyCenterScreen: React.FC = () => {
 
     // Filter alerts based on search query
     const filteredAlerts = alerts.filter(alert =>
-        alert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        alert.description.toLowerCase().includes(searchQuery.toLowerCase())
+        alert.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alert.descripcion.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -321,16 +321,16 @@ export const SafetyCenterScreen: React.FC = () => {
                             >
                                 <div
                                     className="h-32 w-full bg-cover bg-center relative group-hover:scale-105 transition-transform duration-500"
-                                    style={{ backgroundImage: `url('${alert.image_url || getRelevantImage(alert.title, alert.description)}')` }}
+                                    style={{ backgroundImage: `url('${alert.imagen_url || getRelevantImage(alert.titulo, alert.descripcion)}')` }}
                                 >
-                                    <div className={`absolute top-3 left-3 ${getPriorityColor(alert.priority)} text-white text-xs font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1`}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{getPriorityIcon(alert.priority)}</span>
-                                        {alert.priority}
+                                    <div className={`absolute top-3 left-3 ${getPriorityColor(alert.prioridad)} text-white text-xs font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1`}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{getPriorityIcon(alert.prioridad)}</span>
+                                        {alert.prioridad}
                                     </div>
                                 </div>
                                 <div className="p-4 flex flex-col gap-2">
-                                    <h3 className="text-base font-bold text-[#111815] dark:text-white leading-tight">{alert.title}</h3>
-                                    <p className="text-sm text-[#638878] dark:text-gray-300 line-clamp-2">{alert.description}</p>
+                                    <h3 className="text-base font-bold text-[#111815] dark:text-white leading-tight">{alert.titulo}</h3>
+                                    <p className="text-sm text-[#638878] dark:text-gray-300 line-clamp-2">{alert.descripcion}</p>
                                 </div>
                             </button>
                         ))}
@@ -365,29 +365,29 @@ export const SafetyCenterScreen: React.FC = () => {
                             <div key={scam.id} className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 hover:border-primary/30 transition-colors">
                                 <div className="flex items-center gap-3 mb-3">
                                     <img
-                                        src={scam.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${scam.profiles?.username || 'User'}&background=random`}
-                                        alt={scam.profiles?.username || 'User'}
+                                        src={scam.perfiles?.foto_url || `https://ui-avatars.com/api/?name=${scam.perfiles?.nombre || 'User'}&background=random`}
+                                        alt={scam.perfiles?.nombre || 'User'}
                                         className="size-10 rounded-full bg-gray-200 object-cover"
                                     />
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <p className="text-sm font-bold text-[#111815] dark:text-white">
-                                                {scam.profiles?.username || 'Usuario Anónimo'}
+                                                {scam.perfiles?.nombre || 'Usuario Anónimo'}
                                             </p>
-                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${scam.platform === 'Facebook' ? 'bg-blue-100 text-blue-700' :
-                                                scam.platform === 'WhatsApp' ? 'bg-green-100 text-green-700' :
-                                                    scam.platform === 'Instagram' ? 'bg-pink-100 text-pink-700' : 'bg-blue-50 text-blue-600'
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${scam.plataforma === 'Facebook' ? 'bg-blue-100 text-blue-700' :
+                                                scam.plataforma === 'WhatsApp' ? 'bg-green-100 text-green-700' :
+                                                    scam.plataforma === 'Instagram' ? 'bg-pink-100 text-pink-700' : 'bg-blue-50 text-blue-600'
                                                 }`}>
-                                                {scam.platform}
+                                                {scam.plataforma}
                                             </span>
                                         </div>
                                         <p className="text-xs text-gray-400">
-                                            {new Date(scam.created_at).toLocaleDateString()}
+                                            {new Date(scam.fecha_creacion).toLocaleDateString()}
                                         </p>
                                     </div>
                                 </div>
                                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug mb-3">
-                                    "{scam.content}"
+                                    "{scam.contenido}"
                                 </p>
                                 <div className="flex items-center gap-4 text-gray-400 text-xs font-medium">
                                     <div className="flex items-center gap-1 hover:text-red-500 cursor-pointer transition-colors">
@@ -399,7 +399,7 @@ export const SafetyCenterScreen: React.FC = () => {
                                         Comentar
                                     </div>
                                     <div className="ml-auto flex items-center gap-1">
-                                        {currentUser && currentUser.id === scam.user_id && (
+                                        {currentUser && currentUser.id === scam.usuario_id && (
                                             <div className="flex items-center gap-2 mr-3 border-r border-gray-200 dark:border-gray-700 pr-3">
                                                 <button
                                                     onClick={() => handleOpenEdit(scam)}
@@ -471,7 +471,7 @@ export const SafetyCenterScreen: React.FC = () => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Image Header - Fixed height */}
-                        <div className="relative h-48 md:h-64 w-full bg-cover bg-center shrink-0 rounded-t-3xl md:rounded-t-2xl overflow-hidden" style={{ backgroundImage: `url('${selectedAlert.image_url || getRelevantImage(selectedAlert.title, selectedAlert.description)}')` }}>
+                        <div className="relative h-48 md:h-64 w-full bg-cover bg-center shrink-0 rounded-t-3xl md:rounded-t-2xl overflow-hidden" style={{ backgroundImage: `url('${selectedAlert.imagen_url || getRelevantImage(selectedAlert.titulo, selectedAlert.descripcion)}')` }}>
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                             <button
                                 onClick={() => setSelectedAlert(null)}
@@ -480,19 +480,19 @@ export const SafetyCenterScreen: React.FC = () => {
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                             <div className="absolute bottom-4 left-4 right-4">
-                                <div className={`inline-flex ${getPriorityColor(selectedAlert.priority)} text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 mb-3`}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{getPriorityIcon(selectedAlert.priority)}</span>
-                                    {selectedAlert.priority}
+                                <div className={`inline-flex ${getPriorityColor(selectedAlert.prioridad)} text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg items-center gap-1.5 mb-3`}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{getPriorityIcon(selectedAlert.prioridad)}</span>
+                                    {selectedAlert.prioridad}
                                 </div>
-                                <h2 className="text-2xl font-bold text-white leading-tight">{selectedAlert.title}</h2>
+                                <h2 className="text-2xl font-bold text-white leading-tight">{selectedAlert.titulo}</h2>
                             </div>
                         </div>
 
                         {/* Scrollable Content */}
                         <div className="flex-1 overflow-y-auto p-6 pt-0">
-                            <p className="text-base text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">{selectedAlert.description}</p>
+                            <p className="text-base text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">{selectedAlert.descripcion}</p>
 
-                            {selectedAlert.details && (
+                            {selectedAlert.detalles && (
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-bold text-[#111815] dark:text-white flex items-center gap-2">
                                         <span className="material-symbols-outlined text-primary">shield</span>
@@ -533,13 +533,13 @@ export const SafetyCenterScreen: React.FC = () => {
                             )}
 
                             {/* Source Citation */}
-                            {selectedAlert.source && (
+                            {selectedAlert.fuente && (
                                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <div className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
                                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>info</span>
                                         <div>
                                             <span className="font-semibold">Fuente: </span>
-                                            <span>{selectedAlert.source}</span>
+                                            <span>{selectedAlert.fuente}</span>
                                         </div>
                                     </div>
                                 </div>

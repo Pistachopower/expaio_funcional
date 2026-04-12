@@ -21,12 +21,11 @@ export const AuthScreen: React.FC = () => {
     const [username, setUsername] = useState('');
 
     // Onboarding Form State
-    const [age, setAge] = useState('');
-    const [isSpanish, setIsSpanish] = useState('yes'); // 'yes' | 'no'
-    const [occupation, setOccupation] = useState('');
-    const [studies, setStudies] = useState('');
-    const [purpose, setPurpose] = useState('work'); // 'work' | 'study' | 'family' | 'other'
-    const [familyStatus, setFamilyStatus] = useState('single'); // 'single' | 'family'
+    const [fechaNacimiento, setFechaNacimiento] = useState('');
+    const [genero, setGenero] = useState('');
+    const [telefono, setTelefono] = useState('');
+    const [comoNosConocio, setComoNosConocio] = useState('');
+    const [aceptaMarketing, setAceptaMarketing] = useState(true);
 
     // --- Step 1: Handle Credentials Submission ---
     const handleCredentialsSubmit = async (e: React.FormEvent) => {
@@ -60,6 +59,7 @@ export const AuthScreen: React.FC = () => {
             const cleanEmail = email.trim();
             const cleanPassword = password.trim();
             const cleanName = name.trim();
+            const cleanLastName = lastName.trim();
 
             console.log('--- DEBUG START ---');
             console.log('Attempting signup with email:', cleanEmail);
@@ -72,7 +72,8 @@ export const AuthScreen: React.FC = () => {
                 password: cleanPassword,
                 options: {
                     data: {
-                        full_name: cleanName,
+                        first_name: cleanName,
+                        last_name: cleanLastName
                     },
                 },
             });
@@ -115,10 +116,9 @@ export const AuthScreen: React.FC = () => {
         e.preventDefault();
         setIsLoading(true);
 
-        const ageNum = parseInt(age);
-        if (isNaN(ageNum) || ageNum < 18) {
+        if (!fechaNacimiento) {
             setIsLoading(false);
-            alert("Lo sentimos. Debes ser mayor de 18 años para utilizar esta aplicación legal y laboralmente en Suiza.");
+            alert("Por favor, ingresa tu fecha de nacimiento.");
             return;
         }
 
@@ -127,29 +127,20 @@ export const AuthScreen: React.FC = () => {
         if (user) {
             const updates = {
                 id: user.id,
-                full_name: `${name} ${lastName}`.trim(),
-                first_name: name,
-                last_name: lastName,
-                username: username,
-                age: ageNum,
-                is_spanish: isSpanish === 'yes',
-                occupation,
-                studies,
-                origin: isSpanish === 'yes' ? 'España' : 'Otro',
-                updated_at: new Date().toISOString(),
-                canton: 'Zürich',
-                permit: 'Permiso B',
-                arrival_date: new Date().toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }),
-                sector: occupation,
-                purpose: purpose,
-                family_status: familyStatus,
-                avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
+                fecha_nacimiento: fechaNacimiento || null,
+                genero: genero,
+                telefono: telefono,
+                como_nos_conocio: comoNosConocio,
+                acepta_marketing: aceptaMarketing,
+                fecha_actualizacion: new Date().toISOString(),
+                nombre: name,
+                apellido: lastName
             };
 
-            const { error } = await supabase.from('profiles').upsert(updates);
+            const { error } = await supabase.from('perfiles').upsert(updates);
 
             if (error) {
-                console.error('Error updating profile:', error);
+                console.error('Error updating perfiles:', error);
                 alert('Error al guardar el perfil: ' + error.message);
             } else {
                 navigate('/');
@@ -373,91 +364,64 @@ export const AuthScreen: React.FC = () => {
                                 <p className="text-sm text-gray-500">Cuéntanos un poco más sobre ti para personalizar tu experiencia.</p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Edad</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Fecha de Nacimiento</label>
                                     <input
-                                        type="number"
+                                        type="date"
                                         required
-                                        value={age}
-                                        onChange={(e) => setAge(e.target.value)}
-                                        placeholder="Ej: 25"
-                                        min="0"
+                                        value={fechaNacimiento}
+                                        onChange={(e) => setFechaNacimiento(e.target.value)}
                                         className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
                                     />
                                 </div>
+
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">¿Eres Español?</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Teléfono</label>
+                                    <input
+                                        type="tel"
+                                        value={telefono}
+                                        onChange={(e) => setTelefono(e.target.value)}
+                                        placeholder="+34 600 000 000"
+                                        className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">¿Cómo nos conociste?</label>
                                     <select
-                                        value={isSpanish}
-                                        onChange={(e) => setIsSpanish(e.target.value)}
-                                        className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all appearance-none"
+                                        value={comoNosConocio}
+                                        onChange={(e) => setComoNosConocio(e.target.value)}
+                                        className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
                                     >
-                                        <option value="yes">Sí, soy español</option>
-                                        <option value="no">No, de otro país</option>
+                                        <option value="">Selección opcional...</option>
+                                        <option value="redes_sociales">Redes Sociales (TikTok, Instragram...)</option>
+                                        <option value="busqueda">Búsqueda en Google</option>
+                                        <option value="amigo">Recomendación de un amigo o contacto</option>
+                                        <option value="foro">Foro o Grupo (Facebook, Telegram...)</option>
+                                        <option value="otro">Otro</option>
                                     </select>
                                 </div>
-                            </div>
 
-                            {isSpanish === 'no' && (
-                                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/30 rounded-xl animate-fade-in">
-                                    <div className="flex gap-2">
-                                        <span className="material-symbols-outlined text-orange-500 text-[20px]">info</span>
-                                        <p className="text-xs text-orange-700 dark:text-orange-300 leading-tight">
-                                            ExpaIO está diseñada actualmente para españoles, pero próximamente estará disponible para otras nacionalidades. ¡Puedes seguir explorando!
+                                <div className="flex items-start gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                    <div className="flex items-center h-5 mt-0.5">
+                                        <input
+                                            id="marketing"
+                                            type="checkbox"
+                                            checked={aceptaMarketing}
+                                            onChange={(e) => setAceptaMarketing(e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label htmlFor="marketing" className="text-sm font-bold text-gray-700 dark:text-gray-200 cursor-pointer">
+                                            Recibir comunicaciones y ofertas
+                                        </label>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                                            Acepto recibir correos con consejos, mejoras de la app y ofertas relacionadas a mi plan de migración expaIO.
                                         </p>
                                     </div>
                                 </div>
-                            )}
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">¿Cuál es tu propósito en Suiza?</label>
-                                <select
-                                    value={purpose}
-                                    onChange={(e) => setPurpose(e.target.value)}
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all appearance-none"
-                                >
-                                    <option value="work">Trabajar</option>
-                                    <option value="study">Estudiar</option>
-                                    <option value="family">Reagrupación Familiar</option>
-                                    <option value="other">Otros / Solo mirando</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Situación Personal</label>
-                                <select
-                                    value={familyStatus}
-                                    onChange={(e) => setFamilyStatus(e.target.value)}
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all appearance-none"
-                                >
-                                    <option value="single">Soltero/a</option>
-                                    <option value="family">Con familia / pareja</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Ocupación / Profesión</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={occupation}
-                                    onChange={(e) => setOccupation(e.target.value)}
-                                    placeholder="Ej: Ingeniero, Enfermero, Estudiante..."
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Nivel de Estudios</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={studies}
-                                    onChange={(e) => setStudies(e.target.value)}
-                                    placeholder="Ej: Bachillerato, Grado, Máster..."
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
-                                />
                             </div>
 
                             <div className="pt-4 flex gap-3">

@@ -2,30 +2,26 @@ import { supabase } from '../../lib/supabaseClient';
 
 export interface UserProfile {
     id: string;
-    full_name: string | null;
-    first_name: string | null;
-    last_name: string | null;
-    username: string | null;
-    avatar_url: string | null;
-    canton: string | null;
-    permit: string | null;
-    arrival_date: string | null;
-    sector: string | null;
-    studies: string | null;
-    phone: string | null;
-    age: number | null;
-    is_spanish: boolean | null;
-    origin: string | null;
-    purpose: string | null;
-    family_status: string | null;
-    occupation: string | null;
+    nombre: string | null;
+    apellido: string | null;
+    fecha_nacimiento: string | null;
+    genero: string | null;
+    foto_url: string | null;
+    pais_origen_id: string | null;
+    ciudad_origen_id: string | null;
+    idioma_preferido: string | null;
+    telefono: string | null;
+    descripcion: string | null;
+    acepta_marketing: boolean | null;
+    como_nos_conocio: string | null;
+    fecha_actualizacion: string | null;
     email?: string;
 }
 
 export const ProfileRepository = {
     async getProfile(userId: string): Promise<UserProfile | null> {
         const { data, error } = await supabase
-            .from('profiles')
+            .from('perfiles')
             .select('*')
             .eq('id', userId)
             .single();
@@ -40,7 +36,7 @@ export const ProfileRepository = {
 
     async updateProfile(userId: string, profile: Partial<UserProfile>) {
         const { data, error } = await supabase
-            .from('profiles')
+            .from('perfiles')
             .update(profile)
             .eq('id', userId);
 

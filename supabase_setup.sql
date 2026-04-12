@@ -1,68 +1,288 @@
--- Create the community_reports table
-CREATE TABLE IF NOT EXISTS community_reports (
+-- 1. Bases Geográficas
+CREATE TABLE IF NOT EXISTS paises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    platform TEXT NOT NULL,
-    user_name TEXT NOT NULL,
-    content TEXT NOT NULL,
-    date_posted TEXT NOT NULL, -- Can be ISO string or descriptive like 'Hace 2 horas'
-    likes INTEGER DEFAULT 0,
-    avatar_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    nombre TEXT NOT NULL,
+    codigo CHAR(2) NOT NULL UNIQUE
 );
 
--- Enable Row Level Security (RLS)
-ALTER TABLE community_reports ENABLE ROW LEVEL SECURITY;
-
--- Create policy to allow reading by everyone (anon)
-DROP POLICY IF EXISTS "Enable read access for all users" ON community_reports;
-CREATE POLICY "Enable read access for all users" ON community_reports
-    FOR SELECT TO anon USING (true);
-    
--- Create policy to allow reading by authenticated users
-DROP POLICY IF EXISTS "Enable read access for authenticated users" ON community_reports;
-CREATE POLICY "Enable read access for authenticated users" ON community_reports
-    FOR SELECT TO authenticated USING (true);
-
-
--- Insert real seed data from Swiss scam reports (2024-2025)
-INSERT INTO community_reports (platform, user_name, content, date_posted, likes, avatar_url) VALUES 
-('Facebook', 'Laura M.', '¡OJO! Hay un grupo haciéndose pasar por el soporte de TWINT pidiendo verificar datos. Nunca den clic a enlaces por SMS.', 'Hace 4 horas', 156, 'https://ui-avatars.com/api/?name=Laura+M&background=random'),
-('WhatsApp', 'Andreas K.', 'Recibí una llamada de una supuesta "Policía Federal" con voz robótica diciendo que mis cuentas están bloqueadas. Es ESTAFA (Voice Phishing). Cuelguen de inmediato.', 'Ayer', 342, 'https://ui-avatars.com/api/?name=Andreas+K&background=random'),
-('Instagram', 'Sofia R.', 'Perfiles falsos vendiendo entradas para Taylor Swift en Zúrich. Me pidieron pago en Bitcoin. No caigan.', 'Hace 2 días', 89, 'https://ui-avatars.com/api/?name=Sofia+R&background=random'),
-('Telegram', 'CryptoAlert CH', 'Nuevas "Plataformas de Inversión" prometiendo 10% diario. Son esquemas Ponzi. Si te piden impuestos para retirar tu dinero, es fraude.', 'Hace 5 horas', 210, 'https://ui-avatars.com/api/?name=Crypto+CH&background=random'),
-('Facebook', 'Juan P.', 'Alerta de alquiler en Ginebra: Piden 2 meses de depósito por adelantado sin visitar el piso. Las fotos son robadas de un hotel.', 'Hace 1 día', 120, 'https://ui-avatars.com/api/?name=Juan+P&background=random'),
-('Email', 'Sarah L.', 'Cuidado con emails de "Die Post" sobre paquetes retenidos en aduana por 2.50 CHF. El enlace roba tu tarjeta de crédito.', 'Hace 3 horas', 450, 'https://ui-avatars.com/api/?name=Sarah+L&background=random');
-
--- Create the safety_alerts table
-CREATE TABLE IF NOT EXISTS safety_alerts (
+CREATE TABLE IF NOT EXISTS ciudades (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    details TEXT,
-    source TEXT,
-    priority TEXT CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')) DEFAULT 'MEDIUM',
-    image_url TEXT,
+    nombre TEXT NOT NULL,
+    pais_id UUID REFERENCES paises(id) ON DELETE CASCADE,
+    region TEXT
+);
+
+-- INSERCIÓN TEMPORAL DE PAÍSES DE PRUEBA
+INSERT INTO paises (nombre, codigo) VALUES ('España', 'ES'), ('Suiza', 'CH'), ('México', 'MX'), ('Colombia', 'CO'), ('Argentina', 'AR') ON CONFLICT DO NOTHING;
+
+-- 2. Limpieza de Tablas Antiguas (¡CUIDADO! Esto borra datos viejos incompatibles para dejar el esquema limpio)
+DROP TABLE IF EXISTS user_checklists CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS chatbots CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+
+-- 3. Perfiles (v2 Global vinculado a autenticación)
+CREATE TABLE perfiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    nombre TEXT NOT NULL,
+    apellido TEXT NOT NULL,
+    fecha_nacimiento DATE,
+    genero TEXT,
+    foto_url TEXT,
+    pais_origen_id UUID REFERENCES paises(id),
+    ciudad_origen_id UUID REFERENCES ciudades(id),
+    idioma_preferido TEXT,
+    telefono TEXT,
+    descripcion TEXT,
+    acepta_marketing BOOLEAN DEFAULT false,
+    como_nos_conocio TEXT,
+    fecha_actualizacion TIMESTAMPTZ DEFAULT now()
+);
+
+-- Políticas RLS para perfiles
+ALTER TABLE perfiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public profiles are viewable by everyone" ON perfiles FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile" ON perfiles FOR UPDATE USING (auth.uid() = id);
+
+-- Trigger de Registro de Supabase
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.perfiles (id, nombre, apellido, acepta_marketing, foto_url)
+  VALUES (
+    NEW.id, 
+    COALESCE(NEW.raw_user_meta_data->>'first_name', NEW.raw_user_meta_data->>'full_name', ''), 
+    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+    true,
+    NEW.raw_user_meta_data->>'avatar_url'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Eliminamos trigger viejo y creamos el nuevo
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+
+-- 4. Roles
+CREATE TABLE IF NOT EXISTS roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS usuario_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    rol_id UUID REFERENCES roles(id) ON DELETE CASCADE
+);
+
+
+-- 5. Migraciones y Permisos
+CREATE TABLE IF NOT EXISTS migraciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    pais_origen_id UUID REFERENCES paises(id),
+    ciudad_origen_id UUID REFERENCES ciudades(id),
+    pais_destino_id UUID REFERENCES paises(id),
+    ciudad_destino_id UUID REFERENCES ciudades(id),
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    motivo TEXT,
+    estado TEXT,
+    comentarios TEXT
+);
+
+CREATE TABLE IF NOT EXISTS permisos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pais_id UUID REFERENCES paises(id),
+    nombre TEXT NOT NULL,
+    tipo TEXT,
+    descripcion TEXT
+);
+
+CREATE TABLE IF NOT EXISTS migracion_permisos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    migracion_id UUID REFERENCES migraciones(id) ON DELETE CASCADE,
+    permiso_id UUID REFERENCES permisos(id),
+    estado TEXT
+);
+
+
+-- 6. Expertos
+CREATE TABLE IF NOT EXISTS expertos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    profesion TEXT NOT NULL,
+    biografia TEXT,
+    sitio_web TEXT,
+    redes_sociales TEXT
+);
+
+CREATE TABLE IF NOT EXISTS experto_ubicaciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    experto_id UUID REFERENCES expertos(id) ON DELETE CASCADE,
+    pais_id UUID REFERENCES paises(id),
+    ciudad_id UUID REFERENCES ciudades(id)
+);
+
+CREATE TABLE IF NOT EXISTS valoraciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    experto_id UUID REFERENCES expertos(id) ON DELETE CASCADE,
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    puntuacion INT CHECK (puntuacion >= 1 AND puntuacion <= 5),
+    comentario TEXT,
+    fecha TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+
+-- 7. Favoritos y Contactos
+CREATE TABLE IF NOT EXISTS favoritos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    experto_id UUID REFERENCES expertos(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS contactos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    experto_id UUID REFERENCES expertos(id) ON DELETE CASCADE,
+    fecha_contacto TIMESTAMPTZ NOT NULL DEFAULT now(),
+    mensaje TEXT
+);
+
+
+-- 8. Comunidades
+CREATE TABLE IF NOT EXISTS comunidades (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL,
+    descripcion TEXT,
+    pais_id UUID REFERENCES paises(id),
+    ciudad_id UUID REFERENCES ciudades(id),
+    tema TEXT
+);
+
+CREATE TABLE IF NOT EXISTS comunidad_usuarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    comunidad_id UUID REFERENCES comunidades(id) ON DELETE CASCADE,
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    rol TEXT  -- miembro, moderador, administrador
+);
+
+CREATE TABLE IF NOT EXISTS publicaciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    comunidad_id UUID REFERENCES comunidades(id) ON DELETE CASCADE,
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    titulo TEXT NOT NULL,
+    contenido TEXT,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS comentarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    publicacion_id UUID REFERENCES publicaciones(id) ON DELETE CASCADE,
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    contenido TEXT NOT NULL,
+    fecha TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+
+-- 9. Checklists y Chatbots
+CREATE TABLE IF NOT EXISTS usuario_checklists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    item_id TEXT NOT NULL,
+    completado BOOLEAN NOT NULL DEFAULT false,
+    fecha_actualizacion TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(usuario_id, item_id)
+);
+
+-- Renombrado bots a chatbots como indicaste
+CREATE TABLE IF NOT EXISTS chatbots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre TEXT NOT NULL,
+    descripcion TEXT,
+    pais_id UUID REFERENCES paises(id),
+    ciudad_id UUID REFERENCES ciudades(id),
+    idioma TEXT,
+    parametros JSONB,
+    user_id UUID REFERENCES auth.users(id) -- Añadido temporalmente para compatibilidad con código
+);
+
+CREATE TABLE IF NOT EXISTS mensajes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chatbot_id UUID REFERENCES chatbots(id) ON DELETE CASCADE,
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    rol TEXT,
+    contenido TEXT,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+
+-- 10. Alertas y Reportes Comunitarios
+CREATE TABLE IF NOT EXISTS alertas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pais_id UUID REFERENCES paises(id),
+    ciudad_id UUID REFERENCES ciudades(id),
+    tipo TEXT,
+    idioma TEXT,
+    titulo TEXT,
+    descripcion TEXT,
     link TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    imagen_url TEXT,
+    fuente TEXT,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Enable RLS for safety_alerts
-ALTER TABLE safety_alerts ENABLE ROW LEVEL SECURITY;
-
--- Policy for reading alerts (public)
-DROP POLICY IF EXISTS "Everyone can read safety alerts" ON safety_alerts;
-CREATE POLICY "Everyone can read safety alerts" ON safety_alerts
-    FOR SELECT TO anon, authenticated USING (true);
-
--- Policy for inserting alerts (only service_role or admins)
--- Assuming service_role will be used by the Edge Function
-DROP POLICY IF EXISTS "Service role can manage alerts" ON safety_alerts;
-CREATE POLICY "Service role can manage alerts" ON safety_alerts
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
-
--- Seed data for safety_alerts (Ejemplo inicial)
-INSERT INTO safety_alerts (title, description, details, source, priority, created_at) VALUES
-('Phishing de "Swiss Post"', 'Correos fraudulentos pidiendo pago de aduanas por paquetes inexistentes.', 'Este es uno de los fraudes más comunes en Suiza.\n\n* **Cómo identificarlo:**\n  - El correo llega inesperadamente.\n  - Piden un monto pequeño (ej. 2.50 CHF) para liberar un paquete.\n  - El enlace no lleva a post.ch sino a una web extraña.\n* **Qué hacer:**\n  - No hagas clic en el enlace.\n  - Verifica el número de envío en la web oficial de Swiss Post.\n  - Marca el correo como spam.', 'NCSC', 'HIGH', now() - interval '2 days'),
-('Estafas de alquiler en Zúrich', 'Pisos falsos en Facebook Marketplace pidiendo depósito por adelantado.', 'Los estafadores copian fotos de Airbnb y las ponen a precios muy bajos.\n\n* **Señales de alerta:**\n  - El "dueño" dice que está en el extranjero y no puede mostrar el piso.\n  - Piden dinero por Western Union o transferencia antes de ver el lugar.\n  - Te presionan para decidir rápido.\n* **Consejo:** Nunca pagues nada sin ver el piso y firmar un contrato físico.', 'Police ZH', 'MEDIUM', now() - interval '5 days');
+-- La vieja community_reports será reportes_comunitarios
+DROP TABLE IF EXISTS community_reports CASCADE;
+CREATE TABLE IF NOT EXISTS reportes_comunitarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    contenido TEXT,
+    pais_id UUID REFERENCES paises(id),
+    ciudad_id UUID REFERENCES ciudades(id),
+    plataforma TEXT,
+    tipo_estafa TEXT,
+    likes INT DEFAULT 0,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 
+-- 11. Traducciones
+CREATE TABLE IF NOT EXISTS traducciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    entidad TEXT NOT NULL,
+    referencia_id UUID NOT NULL,
+    campo TEXT NOT NULL,
+    idioma TEXT NOT NULL,
+    texto TEXT NOT NULL
+);
+
+
+-- 12. Surgencias y Mejoras (NUEVA TABLA PARA FEEDBACK)
+CREATE TABLE IF NOT EXISTS sugerencias (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    categoria TEXT, -- ej. mejora, comercial, profesor_contacto, fallo
+    contenido TEXT NOT NULL,
+    estado TEXT DEFAULT 'pendiente', -- pendiente, visto, implementado
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Políticas RLS para sugerencias (Usuarios autenticados pueden insertar, cualquiera no puede leerlas todas)
+ALTER TABLE sugerencias ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can create their own suggestions" ON sugerencias FOR INSERT TO authenticated WITH CHECK (auth.uid() = usuario_id);
+CREATE POLICY "Users can view their own suggestions" ON sugerencias FOR SELECT TO authenticated USING (auth.uid() = usuario_id);
+
+-- Configuración RLS basica para desarrollo de las otras tablas
+ALTER TABLE chatbots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable all for anon/auth" ON chatbots USING (true);
+ALTER TABLE mensajes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable all for anon/auth" ON mensajes USING (true);
+ALTER TABLE reportes_comunitarios ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable all for anon/auth" ON reportes_comunitarios USING (true);
+ALTER TABLE usuario_checklists ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable all for anon/auth" ON usuario_checklists USING (true);

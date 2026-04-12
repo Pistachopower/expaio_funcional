@@ -14,8 +14,8 @@ export const useChecklist = (user: any) => {
 
         const loadChecklist = async () => {
             const { data, error } = await supabase
-                .from('user_checklists')
-                .select('item_id, is_completed');
+                .from('usuario_checklists')
+                .select('item_id, completado');
 
             if (error) {
                 console.error('Error loading checklist:', error);
@@ -25,7 +25,7 @@ export const useChecklist = (user: any) => {
             if (data && data.length > 0) {
                 const systemTasks = DEFAULT_TASKS.map(task => {
                     const dbItem = data.find(d => d.item_id === task.id);
-                    return dbItem ? { ...task, completed: dbItem.is_completed } : task;
+                    return dbItem ? { ...task, completed: dbItem.completado } : task;
                 });
 
                 const customTasks: Task[] = data
@@ -39,7 +39,7 @@ export const useChecklist = (user: any) => {
                                 title: parts.slice(3).join(':'),
                                 description: 'Tarea personalizada',
                                 phase: parts[2] as TaskPhase,
-                                completed: d.is_completed,
+                                completed: d.completado,
                                 isSystem: false
                             };
                         } catch (e) {
@@ -65,12 +65,12 @@ export const useChecklist = (user: any) => {
 
         if (user) {
             const { error } = await supabase
-                .from('user_checklists')
+                .from('usuario_checklists')
                 .upsert({
-                    user_id: user.id,
+                    usuario_id: user.id,
                     item_id: id,
-                    is_completed: newStatus
-                }, { onConflict: 'user_id, item_id' });
+                    completado: newStatus
+                }, { onConflict: 'usuario_id, item_id' });
 
             if (error) {
                 console.error('Error saving checklist item:', error);
@@ -84,9 +84,9 @@ export const useChecklist = (user: any) => {
 
         if (user) {
             const { error } = await supabase
-                .from('user_checklists')
+                .from('usuario_checklists')
                 .delete()
-                .eq('user_id', user.id)
+                .eq('usuario_id', user.id)
                 .eq('item_id', id);
 
             if (error) console.error('Error deleting task from Supabase:', error);
@@ -111,10 +111,10 @@ export const useChecklist = (user: any) => {
         setTasks(prev => [newTask, ...prev]);
 
         if (user) {
-            const { error } = await supabase.from('user_checklists').insert({
-                user_id: user.id,
+            const { error } = await supabase.from('usuario_checklists').insert({
+                usuario_id: user.id,
                 item_id: itemId,
-                is_completed: false
+                completado: false
             });
 
             if (error) console.error('Error saving custom task to Supabase:', error);
@@ -131,14 +131,14 @@ export const useChecklist = (user: any) => {
 
         if (user) {
             const updates = missingDefaults.map(task => ({
-                user_id: user.id,
+                usuario_id: user.id,
                 item_id: task.id,
-                is_completed: false
+                completado: false
             }));
 
             const { error } = await supabase
-                .from('user_checklists')
-                .upsert(updates, { onConflict: 'user_id, item_id' });
+                .from('usuario_checklists')
+                .upsert(updates, { onConflict: 'usuario_id, item_id' });
 
             if (error) console.error('Error restoring default tasks to Supabase:', error);
         }
