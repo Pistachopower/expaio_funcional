@@ -72,8 +72,8 @@ export const AuthScreen: React.FC = () => {
                 password: cleanPassword,
                 options: {
                     data: {
-                        first_name: cleanName,
-                        last_name: cleanLastName
+                        nombre: cleanName,
+                        apellido: cleanLastName
                     },
                 },
             });
@@ -137,7 +137,7 @@ export const AuthScreen: React.FC = () => {
                 apellido: lastName
             };
 
-            const { error } = await supabase.from('perfiles').upsert(updates);
+            const { error } = await supabase.from('perfiles').update(updates).eq('id', user.id);
 
             if (error) {
                 console.error('Error updating perfiles:', error);
