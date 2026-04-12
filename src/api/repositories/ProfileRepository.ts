@@ -12,8 +12,10 @@ export interface UserProfile {
     idioma_preferido: string | null;
     telefono: string | null;
     descripcion: string | null;
-    acepta_marketing: boolean | null;
-    como_nos_conocio: string | null;
+    acepta_marketing: boolean;
+    como_nos_conocio?: string;
+    rol: string;
+    estado_cuenta: string;
     fecha_actualizacion: string | null;
     email?: string;
 }

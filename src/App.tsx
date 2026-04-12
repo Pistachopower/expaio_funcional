@@ -21,11 +21,13 @@ import { UpdatePasswordScreen } from './features/auth/screens/UpdatePasswordScre
 import { AboutUsScreen } from './features/about/screens/AboutUsScreen';
 import AudioScreen from './features/resources/screens/AudioScreen';
 import { InitialGuideScreen } from './features/resources/screens/InitialGuideScreen';
+import { PendingScreen } from './features/profile/screens/PendingScreen';
+import { AdminDashboard } from './features/profile/screens/AdminDashboard';
 
 import { useAuth } from './context/AuthContext';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user, loading } = useAuth();
+    const { user, profile, loading } = useAuth();
 
     if (loading) {
         return <div className="flex items-center justify-center h-screen bg-background-light dark:bg-background-dark text-primary"><span className="material-symbols-outlined animate-spin text-4xl">progress_activity</span></div>;
@@ -34,6 +36,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     if (!user) {
         return <Navigate to="/login" replace />;
     }
+
+    if (profile?.estado_cuenta === 'pendiente') {
+        return <PendingScreen />;
+    }
+
     return <>{children}</>;
 };
 
@@ -71,6 +78,7 @@ const App: React.FC = () => {
                                 <Route path="/chat" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
                                 <Route path="/audios-integracion" element={<ProtectedRoute><AudioScreen /></ProtectedRoute>} />
                                 <Route path="/guia-inicial" element={<ProtectedRoute><InitialGuideScreen /></ProtectedRoute>} />
+                                <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
                             </Routes>
                         </div>
                         {/* Spacer for bottom nav on mobile */}

@@ -19,6 +19,7 @@ export const AuthScreen: React.FC = () => {
     const [name, setName] = useState('');
     const [lastName, setLastName] = useState('');
     const [username, setUsername] = useState('');
+    const [rol, setRol] = useState('emigrante');
 
     // Onboarding Form State
     const [fechaNacimiento, setFechaNacimiento] = useState('');
@@ -73,7 +74,8 @@ export const AuthScreen: React.FC = () => {
                 options: {
                     data: {
                         nombre: cleanName,
-                        apellido: cleanLastName
+                        apellido: cleanLastName,
+                        rol: rol
                     },
                 },
             });
@@ -218,6 +220,20 @@ export const AuthScreen: React.FC = () => {
                                             placeholder="ej: nelson99"
                                             className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
                                         />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">¿Cómo vas a usar ExpaIO?</label>
+                                        <select
+                                            value={rol}
+                                            onChange={(e) => setRol(e.target.value)}
+                                            className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
+                                        >
+                                            <option value="emigrante">Voy a Emigrar / Soy Migrante</option>
+                                            <option value="profesor">Ofrezco mis servicios (Profesor)</option>
+                                            <option value="abogado">Ofrezco mis servicios (Abogado)</option>
+                                            <option value="ayuda">Ofrezco mis servicios (Centro de Ayuda)</option>
+                                        </select>
                                     </div>
                                 </div>
                             )}

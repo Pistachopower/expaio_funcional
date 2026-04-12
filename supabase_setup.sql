@@ -21,8 +21,7 @@ DROP TABLE IF EXISTS messages CASCADE;
 DROP TABLE IF EXISTS chatbots CASCADE;
 DROP TABLE IF EXISTS profiles CASCADE;
 
--- 3. Perfiles (v2 Global vinculado a autenticación)
-CREATE TABLE perfiles (
+CREATE TABLE IF NOT EXISTS perfiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     nombre TEXT NOT NULL,
     apellido TEXT NOT NULL,
@@ -36,25 +35,55 @@ CREATE TABLE perfiles (
     descripcion TEXT,
     acepta_marketing BOOLEAN DEFAULT false,
     como_nos_conocio TEXT,
+    rol TEXT DEFAULT 'emigrante',
+    estado_cuenta TEXT DEFAULT 'aprobado',
     fecha_actualizacion TIMESTAMPTZ DEFAULT now()
 );
 
+-- Asegurarse de que si la tabla ya existía de antes, agregue las nuevas columnas:
+ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS rol TEXT DEFAULT 'emigrante';
+ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS estado_cuenta TEXT DEFAULT 'aprobado';
+
 -- Políticas RLS para perfiles
 ALTER TABLE perfiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON perfiles;
 CREATE POLICY "Public profiles are viewable by everyone" ON perfiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can update own profile" ON perfiles;
 CREATE POLICY "Users can update own profile" ON perfiles FOR UPDATE USING (auth.uid() = id);
 
 -- Trigger de Registro de Supabase
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.perfiles (id, nombre, apellido, acepta_marketing, foto_url)
+  INSERT INTO public.perfiles (
+    id,
+    nombre,
+    apellido,
+    genero,
+    fecha_nacimiento,
+    telefono,
+    pais_origen_id,
+    acepta_marketing,
+    como_nos_conocio,
+    rol,
+    estado_cuenta
+  )
   VALUES (
-    NEW.id, 
-    COALESCE(NEW.raw_user_meta_data->>'first_name', NEW.raw_user_meta_data->>'full_name', ''), 
-    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-    true,
-    NEW.raw_user_meta_data->>'avatar_url'
+    new.id,
+    new.raw_user_meta_data->>'nombre',
+    new.raw_user_meta_data->>'apellido',
+    new.raw_user_meta_data->>'genero',
+    (new.raw_user_meta_data->>'fecha_nacimiento')::DATE,
+    new.raw_user_meta_data->>'telefono',
+    (new.raw_user_meta_data->>'pais_origen_id')::UUID,
+    COALESCE((new.raw_user_meta_data->>'acepta_marketing')::BOOLEAN, false),
+    new.raw_user_meta_data->>'como_nos_conocio',
+    COALESCE(new.raw_user_meta_data->>'rol', 'emigrante'),
+    CASE 
+        WHEN COALESCE(new.raw_user_meta_data->>'rol', 'emigrante') = 'emigrante' THEN 'aprobado'
+        WHEN COALESCE(new.raw_user_meta_data->>'rol', 'emigrante') = 'admin' THEN 'aprobado'
+        ELSE 'pendiente'
+    END
   );
   RETURN NEW;
 END;
@@ -67,17 +96,9 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 
--- 4. Roles
-CREATE TABLE IF NOT EXISTS roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre TEXT NOT NULL UNIQUE
-);
-
-CREATE TABLE IF NOT EXISTS usuario_roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    rol_id UUID REFERENCES roles(id) ON DELETE CASCADE
-);
+-- Ya no usamos tablas asociativas complejas de roles
+DROP TABLE IF EXISTS usuario_roles CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
 
 
 -- 5. Migraciones y Permisos
@@ -274,15 +295,24 @@ CREATE TABLE IF NOT EXISTS sugerencias (
 
 -- Políticas RLS para sugerencias (Usuarios autenticados pueden insertar, cualquiera no puede leerlas todas)
 ALTER TABLE sugerencias ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can create their own suggestions" ON sugerencias;
 CREATE POLICY "Users can create their own suggestions" ON sugerencias FOR INSERT TO authenticated WITH CHECK (auth.uid() = usuario_id);
+DROP POLICY IF EXISTS "Users can view their own suggestions" ON sugerencias;
 CREATE POLICY "Users can view their own suggestions" ON sugerencias FOR SELECT TO authenticated USING (auth.uid() = usuario_id);
 
 -- Configuración RLS basica para desarrollo de las otras tablas
 ALTER TABLE chatbots ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all for anon/auth" ON chatbots;
 CREATE POLICY "Enable all for anon/auth" ON chatbots USING (true);
+
 ALTER TABLE mensajes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all for anon/auth" ON mensajes;
 CREATE POLICY "Enable all for anon/auth" ON mensajes USING (true);
+
 ALTER TABLE reportes_comunitarios ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all for anon/auth" ON reportes_comunitarios;
 CREATE POLICY "Enable all for anon/auth" ON reportes_comunitarios USING (true);
+
 ALTER TABLE usuario_checklists ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all for anon/auth" ON usuario_checklists;
 CREATE POLICY "Enable all for anon/auth" ON usuario_checklists USING (true);

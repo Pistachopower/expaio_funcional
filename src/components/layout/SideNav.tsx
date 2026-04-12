@@ -1,10 +1,16 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { NavLink } from '../ui/NavLink';
+import { useAuth } from '../../context/AuthContext';
 
 export const SideNav: React.FC = () => {
     const location = useLocation();
+    const { profile } = useAuth();
     const getActive = (path: string) => location.pathname === path;
+
+    const isEmigrante = profile?.rol === 'emigrante' || !profile?.rol;
+    const isAdmin = profile?.rol === 'admin';
+    const isProfessional = ['profesor', 'abogado', 'ayuda'].includes(profile?.rol || '');
 
     return (
         <div className="hidden md:flex flex-col w-64 h-full bg-white dark:bg-card-dark border-r border-gray-200 dark:border-gray-800 p-4">
@@ -17,11 +23,21 @@ export const SideNav: React.FC = () => {
 
             <nav className="space-y-1 flex-1">
                 <NavLink to="/" icon="home" label="Inicio" isActive={getActive('/')} vertical />
-                <NavLink to="/checklist" icon="check_circle" label="Checklist" isActive={getActive('/checklist')} vertical />
-                <NavLink to="/safety" icon="shield" label="Seguridad" isActive={getActive('/safety')} vertical />
-                <NavLink to="/directory" icon="list_alt" label="Directorio" isActive={getActive('/directory')} vertical />
-                <NavLink to="/chat" icon="smart_toy" label="Asistente IA" isActive={getActive('/chat')} vertical />
-                <NavLink to="/audios-integracion" icon="psychology" label="Integración" isActive={getActive('/audios-integracion')} vertical />
+                
+                {(isEmigrante || isAdmin) && (
+                    <>
+                        <NavLink to="/checklist" icon="check_circle" label="Checklist" isActive={getActive('/checklist')} vertical />
+                        <NavLink to="/safety" icon="shield" label="Seguridad" isActive={getActive('/safety')} vertical />
+                        <NavLink to="/directory" icon="list_alt" label="Directorio" isActive={getActive('/directory')} vertical />
+                        <NavLink to="/chat" icon="smart_toy" label="Asistente IA" isActive={getActive('/chat')} vertical />
+                        <NavLink to="/audios-integracion" icon="psychology" label="Integración" isActive={getActive('/audios-integracion')} vertical />
+                    </>
+                )}
+
+                {isAdmin && (
+                    <NavLink to="/admin" icon="admin_panel_settings" label="Panel Admin" isActive={getActive('/admin')} vertical />
+                )}
+
                 <NavLink to="/about" icon="info" label="Sobre Nosotros" isActive={getActive('/about')} vertical />
             </nav>
 
