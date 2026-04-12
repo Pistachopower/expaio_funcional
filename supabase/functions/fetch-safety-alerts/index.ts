@@ -4,7 +4,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const geminiKey = Deno.env.get("GEMINI_API_KEY") || "AIzaSyDjytqzvpaAIUW_7eJsxHFkM171kIsPgGw";
+  const geminiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!geminiKey) {
+    return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
