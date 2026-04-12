@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabaseClient';
 
@@ -21,12 +21,24 @@ export const AuthScreen: React.FC = () => {
     const [username, setUsername] = useState('');
     const [rol, setRol] = useState('emigrante');
 
+    const [countries, setCountries] = useState<any[]>([]);
+    const [paisOrigenId, setPaisOrigenId] = useState('');
+    const [paisDestinoId, setPaisDestinoId] = useState('');
+
     // Onboarding Form State
     const [fechaNacimiento, setFechaNacimiento] = useState('');
     const [genero, setGenero] = useState('');
     const [telefono, setTelefono] = useState('');
     const [comoNosConocio, setComoNosConocio] = useState('');
     const [aceptaMarketing, setAceptaMarketing] = useState(true);
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            const { data } = await supabase.from('paises').select('id, nombre').order('nombre');
+            if (data) setCountries(data);
+        };
+        fetchCountries();
+    }, []);
 
     // --- Step 1: Handle Credentials Submission ---
     const handleCredentialsSubmit = async (e: React.FormEvent) => {
@@ -75,7 +87,8 @@ export const AuthScreen: React.FC = () => {
                     data: {
                         nombre: cleanName,
                         apellido: cleanLastName,
-                        rol: rol
+                        rol: rol,
+                        pais_destino_id: paisDestinoId
                     },
                 },
             });
@@ -136,7 +149,9 @@ export const AuthScreen: React.FC = () => {
                 acepta_marketing: aceptaMarketing,
                 fecha_actualizacion: new Date().toISOString(),
                 nombre: name,
-                apellido: lastName
+                apellido: lastName,
+                pais_origen_id: paisOrigenId || null,
+                pais_destino_id: paisDestinoId || null
             };
 
             const { error } = await supabase.from('perfiles').update(updates).eq('id', user.id);
@@ -401,6 +416,30 @@ export const AuthScreen: React.FC = () => {
                                         placeholder="+34 600 000 000"
                                         className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">¿De qué país vienes? (Origen)</label>
+                                    <select
+                                        value={paisOrigenId}
+                                        onChange={(e) => setPaisOrigenId(e.target.value)}
+                                        className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
+                                    >
+                                        <option value="">Selecciona tu país...</option>
+                                        {countries.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">¿A qué país quieres emigrar? (Destino)</label>
+                                    <select
+                                        value={paisDestinoId}
+                                        onChange={(e) => setPaisDestinoId(e.target.value)}
+                                        className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
+                                    >
+                                        <option value="">Selecciona tu destino...</option>
+                                        {countries.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                                    </select>
                                 </div>
 
                                 <div>

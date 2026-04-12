@@ -69,22 +69,58 @@ export const SafetyCenterScreen: React.FC = () => {
     const [newReportPlatform, setNewReportPlatform] = useState('WhatsApp');
     const [newReportContent, setNewReportContent] = useState('');
     const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+    const [destinationCountry, setDestinationCountry] = useState<string | null>(null);
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user));
         fetchAlerts();
         fetchCommunityReports();
+        fetchCountryInfo();
     }, []);
+
+    const fetchCountryInfo = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data: profile } = await supabase.from('perfiles').select('pais_destino_id').eq('id', user.id).single();
+            if (profile?.pais_destino_id) {
+                const { data: country } = await supabase.from('paises').select('nombre').eq('id', profile.pais_destino_id).single();
+                if (country) setDestinationCountry(country.nombre);
+            }
+        }
+    };
 
     const fetchAlerts = async () => {
         try {
-            const { data, error } = await supabase
+            // Get user's destination country id first
+            const { data: { user } } = await supabase.auth.getUser();
+            let paisId: string | null = null;
+            if (user) {
+                const { data: profile } = await supabase.from('perfiles').select('pais_destino_id').eq('id', user.id).single();
+                paisId = profile?.pais_destino_id || null;
+            }
+
+            let alertData: SafetyAlert[] = [];
+
+            // 1. Country-specific alerts
+            if (paisId) {
+                const { data } = await supabase
+                    .from('alertas')
+                    .select('*')
+                    .eq('pais_id', paisId)
+                    .order('fecha_creacion', { ascending: false });
+                if (data) alertData = data;
+            }
+
+            // 2. Global alerts (pais_id is null) — always include
+            const { data: globalData } = await supabase
                 .from('alertas')
                 .select('*')
+                .is('pais_id', null)
                 .order('fecha_creacion', { ascending: false });
 
-            if (error) throw error;
-            setAlerts(data || []);
+            if (globalData) alertData = [...alertData, ...globalData];
+
+            setAlerts(alertData);
         } catch (error) {
             console.error('Error fetching safety alerts:', error);
         } finally {
@@ -118,7 +154,7 @@ export const SafetyCenterScreen: React.FC = () => {
         setIsSearching(true);
         setAiResult(null);
         try {
-            const result = await geminiService.searchSafetyRisk(searchQuery);
+            const result = await geminiService.searchSafetyRisk(searchQuery, destinationCountry || 'tu destino');
             setAiResult(result);
         } catch (e) {
             console.error(e);
@@ -245,11 +281,11 @@ export const SafetyCenterScreen: React.FC = () => {
                                 <div className="flex items-center">
                                     <h2 className="text-lg font-bold leading-tight tracking-tight dark:text-white">Centro de Seguridad</h2>
                                     <InfoButton
-                                        title="Tu Escudo en Suiza"
-                                        text="Suiza es segura, pero los inmigrantes son blanco de estafas digitales. Aquí puedes verificar si un contrato de trabajo es real, si un piso es una estafa o buscar alertas recientes enviadas por la comunidad."
+                                        title={`Tu Escudo en ${destinationCountry || 'el Extranjero'}`}
+                                        text={`${destinationCountry || 'Tu destino'} es un gran lugar, pero los inmigrantes a veces son blanco de estafas digitales. Aquí puedes verificar si un contrato de trabajo es real, si un alquiler es una estafa o buscar alertas recientes.`}
                                     />
                                 </div>
-                                <p className="text-xs text-[#638878] dark:text-gray-400 font-medium">Suiza • Seguro</p>
+                                <p className="text-xs text-[#638878] dark:text-gray-400 font-medium">{destinationCountry || 'Global'} • Seguro</p>
                             </div>
                         </div>
                     </div>
@@ -451,13 +487,13 @@ export const SafetyCenterScreen: React.FC = () => {
                             <p className="text-xs text-[#638878] dark:text-gray-400 mt-1">Presupuesto real.</p>
                         </div>
                     </Link>
-                    <Link to="/tax-guide" className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-start gap-3 text-left hover:border-primary/50 transition-colors group">
+                    <Link to="/guia/impuestos" className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-start gap-3 text-left hover:border-primary/50 transition-colors group">
                         <div className="size-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
                             <span className="material-symbols-outlined" style={{ fontSize: 24 }}>account_balance</span>
                         </div>
                         <div>
                             <h3 className="font-bold text-sm dark:text-white">Impuestos</h3>
-                            <p className="text-xs text-[#638878] dark:text-gray-400 mt-1">Quellensteuer guía.</p>
+                            <p className="text-xs text-[#638878] dark:text-gray-400 mt-1">Guía fiscal local.</p>
                         </div>
                     </Link>
                 </div>

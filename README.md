@@ -1,129 +1,80 @@
-# ExpaIO - Documentación del Proyecto
+# ExpaIO - Plataforma de Migración Global 🌍
 
-## 0. Aplicación:
-- https://expaio-funcional.vercel.app/
+**ExpaIO** es el copiloto inteligente para cualquier persona que esté planeando o viviendo un proceso de migración. A diferencia de las guías estáticas, ExpaIO utiliza Inteligencia Artificial Generativa y una arquitectura binacional para ofrecer asesoramiento personalizado según el país de origen y el de destino del usuario.
 
-## 1. Introducción
-**ExpaIO** es una aplicación web diseñada para ayudar a las personas que acaban de mudarse a Suiza (o planean hacerlo). Su misión es simplificar la burocracia y la integración mediante herramientas fáciles de usar y un asistente inteligente.
-
-## 2. Funcionalidades Clave
-
-### 🔐 Login y Registro Fácil
-- **Qué hace**: Permite a los usuarios crear una cuenta segura con su correo electrónico.
-- **Para qué sirve**: Para guardar tu progreso (checklist), tus datos personales y tu historial de chats, para que no se pierdan si cierras el navegador.
-
-### ✅ Checklist Interactivo
-- **Qué hace**: Una lista de tareas inteligente dividida en "Planificación" (antes de ir) y "Llegada" (ya en Suiza).
-- **Para qué sirve**: Te guía paso a paso en trámites como "Abrir cuenta bancaria", "Seguro médico" o "Permiso de residencia".
-- **Inteligencia**: Se sincroniza automáticamente con la "nube" (base de datos). Si marcas una tarea en tu móvil, aparecerá marcada en tu ordenador.
-
-### 🤖 Asistente IA (ExpaIO Bot)
-- **Qué hace**: Un chat donde puedes preguntar cualquier duda sobre vivir en Suiza (en español).
-- **Para qué sirve**: Responde preguntas complejas como "¿Cómo funciona el seguro médico?" o "¿Qué es la Quellensteuer?" al instante, sin tener que buscar en Google por horas.
-
-### 📚 Centro de Recursos
-- **Qué hace**: Guías rápidas sobre trabajo, vivienda, seguros y transporte.
-- **Para qué sirve**: Información verificada y directa al grano.
+## 🚀 Misión
+Simplificar la burocracia, la logística y la adaptación cultural en cualquier proceso migratorio mediante tecnología accesible y experta.
 
 ---
 
-## 3. ¿Cómo está construido? (Tecnología)
+## 📸 Funcionalidades Clave
 
-Imagina que la aplicación es como un restaurante:
+### 🤖 Asistente IA Binacional
+Un chat interactivo potenciado por **Google Gemini 2.0 Flash** que es plenamente consciente de la nacionalidad del usuario y su país de destino.
+- **Lógica de Conexión**: Entiende los requisitos de visa, convenios de salud y normativas laborales específicas para cada par Origen → Destino (ej: Colombiano en Alemania).
+- **Traducción Contextual**: Responde en el idioma del usuario facilitando la comprensión de términos legales extranjeros.
 
-1.  **La Fachada (Frontend - React + Vite)**:
-    - Es lo que tú ves y tocas (los botones, los colores, las animaciones).
-    - Está hecho con tecnología moderna para que sea ultra-rápido y funcione bien en móviles.
+### ✅ Checklist Inteligente por Destino
+Una lista de tareas dinámica que se adapta según el destino seleccionado.
+- **Fases**: Planificación (Antes de viajar) y Llegada (Trámites locales).
+- **Sincronización**: Progreso persistente en tiempo real vía Supabase.
 
-2.  **El Almacén (Backend - Supabase)**:
-    - Es donde se guardan los "ingredientes": tus datos de usuario, qué tareas has completado y quién eres.
-    - Es seguro y privado. Nadie más puede ver tus datos.
-
-3.  **El Chef Experto (IA - Google Gemini)**:
-    - Es el cerebro detrás del chat.
-    - Usamos un modelo avanzado de Google (`gemini-2.5-flash`) entrenado para entender y responder en español con empatía.
+### 📖 Guías Dinámicas (Tiered System)
+Sistema de recursos con tres niveles de prioridad para asegurar que el usuario nunca esté desinformado:
+1.  **Guía Específica**: Origen + Destino (ej: Visas para peruanos).
+2.  **Guía de País**: Información general del destino.
+3.  **Guía Global**: Pilares fundamentales de la migración (Fallback).
 
 ---
 
-## 4. Flujos de Usuario (Diagramas)
+## 🛠️ Stack Tecnológico
 
-### A. Flujo de Registro (Entrar a la App)
-Este diagrama muestra qué pasa cuando un usuario nuevo se registra.
+- **Frontend**: React 18 + Vite (Arquitectura Feature-Sliced Design).
+- **Backend-as-a-Service**: Supabase (Auth, PostgreSQL, Realtime).
+- **Edge Functions**: Supabase (Deno) + `pg_cron` + `pg_net` para automatización.
+- **IA**: Google Generative AI SDK (Gemini 2.0 Flash).
+- **Estilos**: TailwindCSS y CSS Puro.
 
-```mermaid
-graph LR
-    User((Usuario)) -->|1. Introduce Email/Pass| App[Aplicación ExpaIO]
-    App -->|2. Envía datos| Supabase[Base de Datos (Supabase)]
-    Supabase -->|3. Verifica & Crea Usuario| Supabase
-    Supabase -->|4. Crea Perfil Vacío| DB[(Tabla Perfiles)]
-    Supabase -->|5. Confirma Login| App
-    App -->|6. Muestra Home| User
-    style App fill:#e1f5fe,stroke:#01579b
-    style Supabase fill:#e8f5e9,stroke:#2e7d32
-```
+---
 
-### B. Flujo del Checklist (Guardar Progreso)
-Cómo se guarda tu progreso para que no se pierda.
+## 📂 Estructura del Proyecto
 
-```mermaid
-sequenceDiagram
-    participant User as Usuario
-    participant App as Aplicación
-    participant DB as Base de Datos (Cloud)
-
-    User->>App: Abre el Checklist
-    App->>DB: ¿Qué tareas tiene hechas este usuario?
-    DB-->>App: Lista de tareas completadas (ej: "Cuenta Bancaria")
-    App-->>User: Muestra las casillas marcadas
-    
-    User->>App: Marca "Seguro Médico" ✅
-    App->>User: Muestra ✅ inmediatamente (Rápido)
-    App->>DB: Guardar: "Seguro Médico = Completado"
-    DB-->>App: Confirmado, guardado.
-```
-
-### C. Flujo del Chat con IA
-Cómo funciona la magia del asistente.
-
-```mermaid
-graph TD
-    User[Usuario Pregunta: \n"¿Qué es la 'Lamal'?"] -->|Envía Texto| App
-    App -->|Añade contexto: \n"Responde en español, sé amable..."| AI[Cerebro IA (Google Gemini)]
-    
-    subgraph "Proceso de Pensamiento"
-    AI -->|Piensa| Thinking[Analiza la pregunta]
-    Thinking -->|Redacta| Response[Genera respuesta sobre Seguro Médico]
-    end
-    
-    AI -->|Envía Respuesta| App
-    App -->|Muestra Texto| User
-    
-    style AI fill:#f3e5f5,stroke:#7b1fa2
+```text
+src/
+├── api/            # Repositorios de datos (Supabase)
+├── components/     # Componentes compartidos y Layout
+├── context/        # Autenticación y Estados Globales
+├── features/       # Módulos funcionales (Chat, Checklist, Profile)
+├── lib/            # Clientes de servicios externos (Gemini, Supabase)
+└── types/          # Definiciones de TypeScript
 ```
 
 ---
 
-## 5. Resumen Técnico para el Equipo
-(Si algún programador entra al proyecto en el futuro)
+## 🛠️ Configuración Local
 
-- **Repositorio**: GitHub (control de versiones).
-- **Base de Datos**: PostgreSQL (gestionado por Supabase).
-- **Tablas**:
-    - `profiles`: Datos del usuario.
-    - `user_checklists`: Estado de tareas.
-    - `chatbots` / `messages`: Historial de chat.
-- **Inteligencia Artificial**: Google Generative AI SDK (`@google/generative-ai`).
-- **Autenticación**: Supabase Auth (Email/Password).
-- **Estilos**: TailwindCSS (vía CDN/CSS puro) y CSS Modules.
+1. **Clonar y descargar dependencias**:
+   ```bash
+   npm install
+   ```
 
+2. **Variables de Entorno**:
+   Crea un archivo `.env.local` con:
+   ```env
+   VITE_SUPABASE_URL=tu_url
+   VITE_SUPABASE_ANON_KEY=tu_key
+   VITE_GEMINI_API_KEY=tu_api_key
+   ```
 
-## Run Locally
+3. **Ejecutar en desarrollo**:
+   ```bash
+   npm run dev
+   ```
 
-**Prerequisites:**  Node.js
+---
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 👥 Para Desarrolladores (Onboarding)
+Si te unes al equipo de ExpaIO, revisa:
+- 📘 [Manual de Usuario y Técnico](documentacion/MANUAL_USUARIO_Y_TECNICO.md) — lógica de negocio, IA y sistema de alertas.
+- 🏗️ [Guía de Arquitectura](documentacion/ARQUITECTURA.md) — esquema de BD, repositorios y flujo de datos.
+- 🗄️ [Migraciones SQL](documentacion/migrations.sql) — cambios de esquema para entornos existentes.

@@ -3,14 +3,51 @@ import { Link } from 'react-router-dom';
 import { InfoButton } from '../../../components';
 import { useAuth } from '../../../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+import { supabase } from '../../../lib/supabaseClient';
 
 export const HomeScreen: React.FC = () => {
     const { profile } = useAuth();
     const { userName, userPhoto } = useProfile(profile);
+    const [countries, setCountries] = React.useState<any[]>([]);
+    const [destinationCountry, setDestinationCountry] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        const fetchCountries = async () => {
+            const { data } = await supabase.from('paises').select('id, nombre');
+            if (data) {
+                setCountries(data);
+                if (profile?.pais_destino_id) {
+                    const country = data.find(c => c.id === profile.pais_destino_id);
+                    if (country) setDestinationCountry(country.nombre);
+                }
+            }
+        };
+        fetchCountries();
+    }, [profile?.pais_destino_id]);
+
+    const handleCountryChange = async (countryId: string) => {
+        if (!profile?.id) return;
+        const { error } = await supabase
+            .from('perfiles')
+            .update({ pais_destino_id: countryId })
+            .eq('id', profile.id);
+        
+        if (!error) {
+            window.location.reload(); // Quick refresh to update all contexts
+        }
+    };
 
     const isEmigrante = profile?.rol === 'emigrante' || !profile?.rol;
     const isAdmin = profile?.rol === 'admin';
     const isProfessional = ['profesor', 'abogado', 'ayuda'].includes(profile?.rol || '');
+    
+    const bannerTitle = isProfessional 
+        ? "Impulsa tu Presencia" 
+        : `Tu Viaje a ${destinationCountry || 'el Extranjero'} Empieza Aquí`;
+    
+    const bannerSubtitle = isProfessional
+        ? "Conecta con hispanohablantes que necesitan de tus servicios profesionales."
+        : `Todo lo que necesitas para tu proceso de migración y establecimiento en ${destinationCountry || 'tu destino'}.`;
 
     return (
         <div className="flex flex-col h-full animate-fade-in w-full">
@@ -35,6 +72,19 @@ export const HomeScreen: React.FC = () => {
                         <img src={userPhoto} alt="Profile" className="w-full h-full object-cover" />
                     </Link>
                 </div>
+
+                {/* Country Quick Selector */}
+                <div className="flex items-center gap-2 mt-4 bg-white/50 dark:bg-card-dark/50 backdrop-blur-sm p-2 px-3 rounded-2xl border border-gray-100 dark:border-gray-800 w-fit">
+                    <span className="material-symbols-outlined text-gray-500 text-sm">location_on</span>
+                    <select 
+                        value={profile?.pais_destino_id || ''} 
+                        onChange={(e) => handleCountryChange(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none cursor-pointer"
+                    >
+                        <option value="">Selecciona tu destino...</option>
+                        {countries.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    </select>
+                </div>
             </header>
 
             <div className="px-4 space-y-6 w-full max-w-5xl mx-auto pb-24 md:pb-12">
@@ -43,12 +93,10 @@ export const HomeScreen: React.FC = () => {
                     <img src={isProfessional ? "/expert_hero.png" : "/hero.png"} alt="Banner" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = "/hero.png"; }} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-6">
                         <h2 className="text-white text-xl font-bold mb-1">
-                            {isProfessional ? "Impulsa tu Presencia" : "Tu Viaje a Suiza Empieza Aquí"}
+                            {bannerTitle}
                         </h2>
                         <p className="text-white/80 text-xs font-medium max-w-[250px]">
-                            {isProfessional 
-                                ? "Conecta con hispanohablantes que necesitan de tus servicios profesionales."
-                                : "Todo lo que necesitas para tu proceso de migración y establecimiento en el país helvético."}
+                            {bannerSubtitle}
                         </p>
                     </div>
                     <div className="absolute top-4 right-4 animate-bounce">
@@ -157,8 +205,8 @@ export const HomeScreen: React.FC = () => {
                                         <span className="material-symbols-outlined" style={{ fontSize: 24 }}>psychology</span>
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-sm text-[#111815] dark:text-white">Integración</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Adaptación y Mente</p>
+                                        <h4 className="font-bold text-sm text-[#111815] dark:text-white">Adaptación</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Mentalidad y Mente</p>
                                     </div>
                                 </Link>
         
@@ -172,7 +220,7 @@ export const HomeScreen: React.FC = () => {
                                     <h3 className="text-[#111815] dark:text-white font-bold text-lg">Guías Esenciales</h3>
                                     <InfoButton
                                         title="Manual de Supervivencia"
-                                        text="Información detallada y paso a paso sobre los pilares de la vida en Suiza: obtención de trabajo, seguros obligatorios, el sistema de impuestos y alquileres."
+                                        text={`Información detallada y paso a paso sobre los pilares de la vida en ${destinationCountry || 'tu destino'}: obtención de trabajo, seguros, el sistema de impuestos y vivienda.`}
                                     />
                                 </div>
                                 <Link to="/directory" className="text-primary text-xs font-bold hover:underline">Ver más</Link>
@@ -181,52 +229,51 @@ export const HomeScreen: React.FC = () => {
                             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x md:grid md:grid-cols-3 md:overflow-visible">
         
                                 {/* Job Guide Link */}
-                                <Link to="/job-guide" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                <Link to="/guia/trabajo" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <div className="size-12 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center shrink-0">
                                         <span className="material-symbols-outlined text-orange-500 text-2xl">work</span>
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-sm text-[#111815] dark:text-white">Trabajo</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">CV suizo y portales.</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">CV y portales de empleo.</p>
                                     </div>
                                 </Link>
         
-                                <Link to="/insurance-guide" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                <Link to="/guia/seguros" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <div className="size-12 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
                                         <span className="material-symbols-outlined text-blue-500 text-2xl">medical_services</span>
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-sm text-[#111815] dark:text-white">Seguro Médico</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Perfiles y modelos.</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Trámites y coberturas.</p>
                                     </div>
                                 </Link>
-                                <Link to="/tax-guide" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                <Link to="/guia/impuestos" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <div className="size-12 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center shrink-0">
                                         <span className="material-symbols-outlined text-green-500 text-2xl">account_balance</span>
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-sm text-[#111815] dark:text-white">Impuestos</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Quellensteuer y cantones.</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Sistema fiscal y plazos.</p>
                                     </div>
                                 </Link>
-                                <Link to="/rent-guide" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                <Link to="/guia/alquiler" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <div className="size-12 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center shrink-0">
                                         <span className="material-symbols-outlined text-purple-500 text-2xl">home</span>
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-sm text-[#111815] dark:text-white">Alquiler</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Estudiantes y familias.</p>
+                                        <h4 className="font-bold text-sm text-[#111815] dark:text-white">Vivienda</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Alquiler y requisitos.</p>
                                     </div>
                                 </Link>
         
-                                {/* Transport Guide Link */}
-                                <Link to="/transport-guide" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                <Link to="/guia/vuelos" className="snap-center shrink-0 w-64 md:w-full bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex gap-3 items-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <div className="size-12 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center shrink-0">
                                         <span className="material-symbols-outlined text-teal-500 text-2xl">flight</span>
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-sm text-[#111815] dark:text-white">Vuelos</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Aerolíneas España-Suiza.</p>
+                                        <h4 className="font-bold text-sm text-[#111815] dark:text-white">Transporte</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Conexiones y movilidad.</p>
                                     </div>
                                 </Link>
         

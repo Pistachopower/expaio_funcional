@@ -1,155 +1,175 @@
-# ExpaIO - Documentación del Proyecto
+# ExpaIO - Manual de Usuario y Técnico (Versión Globalizada) 📘
 
-## 1. Introducción
-**ExpaIO** es una aplicación web diseñada para ayudar a las personas que acaban de mudarse a Suiza (o planean hacerlo). Su misión es simplificar la burocracia y la integración mediante herramientas fáciles de usar y un asistente inteligente.
-
-## 2. Funcionalidades Clave
-
-### 🔐 Login y Registro Fácil
-- **Qué hace**: Permite a los usuarios crear una cuenta segura con su correo electrónico.
-- **Para qué sirve**: Para guardar tu progreso (checklist), tus datos personales y tu historial de chats, para que no se pierdan si cierras el navegador.
-
-### ✅ Checklist Interactivo
-- **Qué hace**: Una lista de tareas inteligente dividida en "Planificación" (antes de ir) y "Llegada" (ya en Suiza).
-- **Para qué sirve**: Te guía paso a paso en trámites como "Abrir cuenta bancaria", "Seguro médico" o "Permiso de residencia".
-- **Inteligencia**: Se sincroniza automáticamente con la "nube" (base de datos). Si marcas una tarea en tu móvil, aparecerá marcada en tu ordenador.
-
-### 🤖 Asistente IA (ExpaIO Bot)
-- **Qué hace**: Un chat donde puedes preguntar cualquier duda sobre vivir en Suiza (en español).
-- **Para qué sirve**: Responde preguntas complejas como "¿Cómo funciona el seguro médico?" o "¿Qué es la Quellensteuer?" al instante, sin tener que buscar en Google por horas.
-
-### 📚 Centro de Recursos
-- **Qué hace**: Guías rápidas sobre trabajo, vivienda, seguros y transporte.
-- **Para qué sirve**: Información verificada y directa al grano.
+Este documento detalla el funcionamiento de ExpaIO tras su transformación de una herramienta local (Suiza) a una plataforma de migración global y dinámica.
 
 ---
 
-## 3. ¿Cómo está construido? (Tecnología)
+## PARTE 1: MANUAL DE USUARIO 🧭
 
-Imagina que la aplicación es como un restaurante:
+### 1. El Concepto de "Origen-Destino"
+A diferencia de otros blogs de migración, ExpaIO entiende que tus requisitos dependen de tu nacionalidad.
+- **Perfil**: Al registrarte, defines tu país de origen y tu destino.
+- **Personalización**: El sistema filtrará automáticamente la información para que sea relevante para ti (ej. trámites específicos para un latino mudándose a Europa).
 
-1.  **La Fachada (Frontend - React + Vite)**:
-    - Es lo que tú ves y tocas (los botones, los colores, las animaciones).
-    - Está hecho con tecnología moderna para que sea ultra-rápido y funcione bien en móviles.
+### 2. Copiloto IA (Chat)
+- **Sincronización Inteligente**: Al entrar al chat, verás un estado de "Sincronizando Origen → Destino". Esto asegura que el asistente cargue las leyes y convenios vigentes entre ambos países.
+- **Asesoría de Visas**: Puedes preguntar directamente sobre tipos de visa. La IA responderá basándose en tu pasaporte registrado.
 
-2.  **El Almacén (Backend - Supabase)**:
-    - Es donde se guardan los "ingredientes": tus datos de usuario, qué tareas has completado y quién eres.
-    - Es seguro y privado. Nadie más puede ver tus datos.
+### 3. Centro de Guías Dinámico
+- **Guía Inicial**: Tu primer paso en la app. Si tu país destino tiene una guía preparada, la verás. Si no, recibirás la **Guía Global de Migración** con los pilares fundamentales para no cometer errores en tu viaje.
 
-3.  **El Chef Experto (IA - Google Gemini)**:
-    - Es el cerebro detrás del chat.
-    - Usamos un modelo avanzado de Google (`gemini-2.5-flash`) entrenado para entender y responder en español con empatía.
+### 4. Checklist de Tareas
+- Gestiona tu progreso en tiempo real. Las tareas sugeridas se cargan según la fase de tu proceso (Planificación o Llegada).
 
----
-
-## 4. Flujos de Usuario (Diagramas)
-
-### A. Flujo de Registro (Entrar a la App)
-Este diagrama muestra qué pasa cuando un usuario nuevo se registra.
-
-```mermaid
-graph LR
-    User((Usuario)) -->|1. Introduce Email/Pass| App[Aplicación ExpaIO]
-    App -->|2. Envía datos| Supabase[Base de Datos (Supabase)]
-    Supabase -->|3. Verifica & Crea Usuario| Supabase
-    Supabase -->|4. Crea Perfil Vacío| DB[(Tabla Perfiles)]
-    Supabase -->|5. Confirma Login| App
-    App -->|6. Muestra Home| User
-    style App fill:#e1f5fe,stroke:#01579b
-    style Supabase fill:#e8f5e9,stroke:#2e7d32
-```
-
-### B. Flujo del Checklist (Guardar Progreso)
-Cómo se guarda tu progreso para que no se pierda.
-
-```mermaid
-sequenceDiagram
-    participant User as Usuario
-    participant App as Aplicación
-    participant DB as Base de Datos (Cloud)
-
-    User->>App: Abre el Checklist
-    App->>DB: ¿Qué tareas tiene hechas este usuario?
-    DB-->>App: Lista de tareas completadas (ej: "Cuenta Bancaria")
-    App-->>User: Muestra las casillas marcadas
-    
-    User->>App: Marca "Seguro Médico" ✅
-    App->>User: Muestra ✅ inmediatamente (Rápido)
-    App->>DB: Guardar: "Seguro Médico = Completado"
-    DB-->>App: Confirmado, guardado.
-```
-
-### C. Flujo del Chat con IA
-Cómo funciona la magia del asistente.
-
-```mermaid
-graph TD
-    User[Usuario Pregunta: \n"¿Qué es la 'Lamal'?"] -->|Envía Texto| App
-    App -->|Añade contexto: \n"Responde en español, sé amable..."| AI[Cerebro IA (Google Gemini)]
-    
-    subgraph "Proceso de Pensamiento"
-    AI -->|Piensa| Thinking[Analiza la pregunta]
-    Thinking -->|Redacta| Response[Genera respuesta sobre Seguro Médico]
-    end
-    
-    AI -->|Envía Respuesta| App
-    App -->|Muestra Texto| User
-    
-    style AI fill:#f3e5f5,stroke:#7b1fa2
-```
+### 5. Centro de Seguridad
+- **Alertas Recientes**: Muestra las 10 estafas más comunes en tu país destino, actualizadas cada 24h automáticamente.
+- **Búsqueda IA**: Puedes buscar cualquier tipo de fraude (ej: "estafa de alquiler") y la IA te responderá con los riesgos específicos de tu país.
+- **Reportes Comunitarios**: Los usuarios pueden reportar estafas para alertar a la comunidad.
 
 ---
 
-## 5. Resumen Técnico para el Equipo
-(Si algún programador entra al proyecto en el futuro)
+## PARTE 2: MANUAL TÉCNICO 🛠️
 
-- **Repositorio**: GitHub (control de versiones).
-- **Base de Datos**: PostgreSQL (gestionado por Supabase).
-- **Tablas**:
-    - `profiles`: Datos del usuario.
-    - `user_checklists`: Estado de tareas.
-    - `chatbots` / `messages`: Historial de chat.
-- **Inteligencia Artificial**: Google Generative AI SDK (`@google/generative-ai`).
-- **Autenticación**: Supabase Auth (Email/Password).
-- **Estilos**: TailwindCSS (vía CDN/CSS puro) y CSS Modules.
+Guía técnica sobre la implementación de la lógica global y binacional.
 
+### 1. Arquitectura de Inteligencia Artificial (Gemini)
+El asistente utiliza el modelo **Gemini 2.0 Flash** con una lógica de **Persona Dinámica**:
+- **Archivo**: `src/lib/geminiService.ts`
+- **Lógica**: En cada inicio de chat (`resetChat`), se inyecta un `contextualPrompt` que define al asistente como experto en la relación *País A -> País B*.
+- **Streaming**: La respuesta se entrega por fragmentos (chunks) para mejorar la experiencia de usuario y reducir la latencia percibida.
 
-### Estructura de Arquitectura Feature-Sliced Design (Directorio `src/`)
+### 2. Sistema de Jerarquía de Contenidos (Waterfall)
+El `GuideRepository.ts` implementa una lógica de búsqueda escalonada para maximizar la disponibilidad de información:
+1.  **Nivel 1 (Específico)**: `pais_id` = Destino AND `pais_origen_id` = Origen. (Ej: Visa de trabajo para colombianos en Alemania).
+2.  **Nivel 2 (General)**: `pais_id` = Destino AND `pais_origen_id` = NULL. (Ej: Guía general de vida en Alemania).
+3.  **Nivel 3 (Mundial)**: `pais_id` = NULL AND `pais_origen_id` = NULL. (Ej: Consejos de ahorro para emigrantes).
 
-```mermaid
-graph TD
-    src[src/]
-    
-    %% API Section
-    src --> api[api/]
-    api --> repo[repositories/]
-    +
-    repo --> PR[ProfileRepository.ts]
-    
-    %% Components Section
-    src --> comp[components/]
-    comp --> layout[layout/ - SideNav, BottomNav]
-    comp --> shared[shared/ - BackHeader]
-    comp --> ui[ui/ - NavLink, ThemeToggle]
-    comp --> cindex[index.ts - Central Export]
-    
-    %% Features Section
-    src --> feat[features/]
-    feat --> auth[auth/ - Login, Onboarding]
-    feat --> chat[chat/ - AI Assistant]
-    feat --> check[checklist/ - Task Management]
-    feat --> prof[profile/ - Home & User]
-    feat --> res[resources/ - Guides & Calcs]
-    feat --> safe[safety/ - Scam Verification]
-    
-    %% Global Section
-    src --> lib[lib/ - Supabase, Gemini]
-    src --> types[types/ - Global Definitions]
-    src --> app[App.tsx - Central Routing]
+### 3. Esquema de Base de Datos (Supabase)
+Tablas clave actualizadas para la globalización:
 
-    %% Styling
-    style src fill:#f9f,stroke:#333,stroke-width:2px
-    style feat fill:#bbf,stroke:#333,stroke-width:2px
-    style comp fill:#bfb,stroke:#333,stroke-width:2px
-    style lib fill:#fbb,stroke:#333,stroke-width:2px
+| Tabla | Descripción |
+| :--- | :--- |
+| `paises` | Maestro de países: código ISO, moneda, símbolo. |
+| `perfiles` | Datos del usuario: `pais_origen_id` y `pais_destino_id`. |
+| `guias_paises` | Contenido Markdown. Soporta `pais_origen_id` para guías por nacionalidad. |
+| `tareas_sugeridas` | Plantillas del checklist filtrables por origen/destino. |
+| `alertas` | Alertas de estafas generadas por IA. Filtrables por `pais_id`. |
+| `audios_integracion` | Cápsulas de audio por país o globales. |
+
+### 4. Componentes Globalizados (Screens)
+Pantallas que han sido refactorizadas de estáticas a dinámicas:
+- **InitialGuideScreen.tsx**: Realiza fetch dinámico y maneja fallbacks mundiales.
+- **ChatScreen.tsx**: Implementa estado de inicialización y sincronización binacional.
+- **SafetyCenterScreen.tsx**: Carga alertas filtradas por el país destino del usuario.
+
+### 5. Configuración de Desarrollo
+Para añadir soporte a un nuevo país:
+1.  Insertar el país en la tabla `paises`.
+2.  Crear contenido en `guias_paises` vinculando el `id` del nuevo país.
+3.  Invocar la Edge Function con `?country_code=XX&country_name=NombrePaís` para generar alertas.
+
+---
+
+## PARTE 3: SISTEMA DE ALERTAS DE SEGURIDAD 🔐
+
+### Visión General
+El Centro de Seguridad muestra alertas de estafas actualizadas diariamente de forma automática, sin intervención manual. Combina tres tecnologías: Edge Functions, pg_cron y pg_net.
+
+### Flujo de Datos
+
 ```
+Cada día a las 3:00am UTC:
+
+  ┌─────────────┐     ┌──────────────────┐     ┌─────────────┐     ┌──────────────┐
+  │  pg_cron    │────▶│ Edge Function    │────▶│  Gemini AI  │────▶│  Tabla       │
+  │ (scheduler) │     │ crawler-scams    │     │  2.0 Flash  │     │  alertas     │
+  └─────────────┘     └──────────────────┘     └─────────────┘     └──────────────┘
+  Dispara la           Orquesta la llamada       Genera 10            Los datos
+  llamada HTTP         a la IA y la BD           alertas JSON         se guardan
+```
+
+### Componentes Técnicos
+
+#### Edge Function (`crawler-scams`)
+- **Ruta**: `supabase/functions/fetch-safety-alerts/index.ts`
+- **Trigger**: HTTP GET (por pg_cron o invocación manual)
+- **Parámetros opcionales**:
+  - `?country_code=DE` → filtra por país en la BD (`paises.codigo`)
+  - `?country_name=Alemania` → personaliza el prompt de Gemini
+- **Sin parámetros**: genera alertas para Suiza por defecto
+
+**Lógica interna:**
+1. Resueve el `pais_id` desde `country_code` si se proporciona.
+2. Construye un prompt pidiendo las 10 estafas más comunes.
+3. Llama a Gemini 2.0 Flash y parsea el JSON de respuesta.
+4. Borra las alertas antiguas del mismo país.
+5. Inserta las nuevas con `pais_id` para filtrado en frontend.
+
+#### Programador (pg_cron + pg_net)
+
+**Instalación** (una sola vez en SQL Editor):
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+```
+
+**Registrar el cron job:**
+```sql
+SELECT cron.schedule(
+  'daily-scam-alerts-suiza',
+  '0 3 * * *',
+  $$
+  SELECT net.http_get(
+    url := 'https://vixnltmforfcivzrecuf.supabase.co/functions/v1/crawler-scams',
+    headers := jsonb_build_object(
+      'Authorization', 'Bearer <ANON_KEY>',
+      'Content-Type', 'application/json'
+    )
+  );
+  $$
+);
+```
+
+**Verificar / gestionar jobs:**
+```sql
+SELECT jobid, schedule, active FROM cron.job;  -- Ver jobs
+SELECT cron.unschedule(<jobid>);               -- Eliminar un job
+```
+
+#### Tabla `alertas` (esquema completo)
+
+| Columna | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `id` | UUID | Clave primaria |
+| `pais_id` | UUID | País al que aplica. NULL = alerta global |
+| `titulo` | TEXT | Título corto de la estafa |
+| `descripcion` | TEXT | Resumen en una frase |
+| `detalles` | TEXT | Instrucciones para evitarla o actuar |
+| `fuente` | TEXT | Fuente oficial (policía, NCSC, BSI, etc.) |
+| `prioridad` | TEXT | LOW / MEDIUM / HIGH / CRITICAL |
+| `imagen_url` | TEXT | Imagen ilustrativa |
+| `link` | TEXT | Enlace adicional (opcional) |
+| `fecha_creacion` | TIMESTAMPTZ | Timestamp de inserción |
+
+### Mantenimiento
+
+Invocar la Edge Function para un país concreto:
+```
+GET https://vixnltmforfcivzrecuf.supabase.co/functions/v1/crawler-scams?country_code=DE&country_name=Alemania
+```
+
+Insertar una alerta manual:
+```sql
+INSERT INTO alertas (pais_id, titulo, descripcion, detalles, fuente, prioridad)
+VALUES ('<uuid-pais>', 'Nombre estafa', 'Descripción', 'Pasos detallados', 'Fuente', 'HIGH');
+```
+
+---
+
+## 📅 Roadmap de Globalización
+- [x] Migración de lógica suiza a dinámica.
+- [x] Implementación de Puente Origen-Destino en IA.
+- [x] Sistema de Jerarquía de Guías (Fallback).
+- [x] Sistema de Alertas de Seguridad automatizado (Edge Function + pg_cron).
+- [ ] Refactorización de Calculadora y Directorio (Pendiente).
+- [ ] Limpieza completa de referencias hardcoded en UI (Pendiente).

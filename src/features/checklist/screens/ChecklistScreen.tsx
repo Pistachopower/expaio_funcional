@@ -1,15 +1,25 @@
 import React, { useState } from 'react';
 import { BackHeader } from '../../../components';
 import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabaseClient';
 import { Task, TaskPhase } from '../types';
 import { useChecklist } from '../hooks/useChecklist';
 import { TaskItem } from '../components/TaskItem';
 import { TaskDetailModal } from '../components/TaskDetailModal';
-import { DEFAULT_TASKS } from '../constants';
 
 export const ChecklistScreen: React.FC = () => {
-    const { user } = useAuth();
-    const { tasks, toggleTask, deleteTask, addTask, restoreDefaultTasks } = useChecklist(user);
+    const { user, profile } = useAuth();
+    const { tasks, isLoading, toggleTask, deleteTask, addTask, restoreDefaultTasks } = useChecklist(user);
+    const [destinationCountry, setDestinationCountry] = useState<string>('');
+
+    React.useEffect(() => {
+        if (profile?.pais_destino_id) {
+            supabase.from('paises').select('nombre').eq('id', profile.pais_destino_id).single()
+                .then(({ data }) => {
+                    if (data) setDestinationCountry(data.nombre);
+                });
+        }
+    }, [profile?.pais_destino_id]);
 
     const [activePhase, setActivePhase] = useState<TaskPhase>('planificacion');
     const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -32,7 +42,7 @@ export const ChecklistScreen: React.FC = () => {
                 title="Checklist"
                 showHelp={true}
                 helpTitle="Tu Hoja de Ruta"
-                helpText="Aquí encontrarás todos los pasos que debes dar antes y después de llegar a Suiza. Las tareas del sistema te guían en lo básico, y puedes añadir tus propias tareas personalizadas."
+                helpText={`Aquí encontrarás todos los pasos que debes dar antes y después de llegar a ${destinationCountry || 'tu destino'}.`}
             />
             <main className="flex-1 flex flex-col p-4 w-full max-w-3xl mx-auto">
 
@@ -68,7 +78,7 @@ export const ChecklistScreen: React.FC = () => {
                             : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                     >
-                        Llegada a Suiza
+                        Llegada a {destinationCountry || 'Destino'}
                     </button>
                 </div>
 
@@ -81,17 +91,17 @@ export const ChecklistScreen: React.FC = () => {
                         <p className="text-[#638878] dark:text-[#9ab0a6] text-sm font-normal leading-relaxed">
                             {activePhase === 'planificacion'
                                 ? 'Tareas esenciales antes de subir al avión.'
-                                : 'Trámites burocráticos una vez pises suelo suizo.'}
+                                : `Trámites burocráticos una vez pises suelo en ${destinationCountry || 'tu destino'}.`}
                         </p>
                     </div>
-                    {tasks.length < DEFAULT_TASKS.length && (
+                    {tasks.length > 0 && (
                         <button
                             onClick={restoreDefaultTasks}
                             className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 p-2 rounded-lg hover:text-primary transition-colors flex items-center gap-1.5"
-                            title="Restaurar tareas sugeridas"
+                            title="Actualizar tareas sugeridas"
                         >
-                            <span className="material-symbols-outlined text-[18px]">rebound</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Restaurar</span>
+                            <span className="material-symbols-outlined text-[18px]">refresh</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Actualizar</span>
                         </button>
                     )}
                 </div>
@@ -120,17 +130,24 @@ export const ChecklistScreen: React.FC = () => {
 
                 {/* Task List */}
                 <div className="flex flex-col gap-4">
-                    {visibleTasks.map((task) => (
-                        <TaskItem
-                            key={task.id}
-                            task={task}
-                            onToggle={toggleTask}
-                            onDelete={deleteTask}
-                            onSelect={setSelectedTask}
-                        />
-                    ))}
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                            <span className="material-symbols-outlined text-4xl mb-4 text-primary animate-spin">refresh</span>
+                            <p className="text-gray-500 font-medium">Cargando tu hoja de ruta...</p>
+                        </div>
+                    ) : (
+                        visibleTasks.map((task) => (
+                            <TaskItem
+                                key={task.id}
+                                task={task}
+                                onToggle={toggleTask}
+                                onDelete={deleteTask}
+                                onSelect={setSelectedTask}
+                            />
+                        ))
+                    )}
 
-                    {visibleTasks.length === 0 && (
+                    {!isLoading && visibleTasks.length === 0 && (
                         <div className="text-center py-10 opacity-50">
                             <span className="material-symbols-outlined text-4xl mb-2 text-gray-400">task_alt</span>
                             <p className="text-gray-500">No hay tareas en esta fase.</p>

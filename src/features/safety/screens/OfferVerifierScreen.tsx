@@ -1,7 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BackHeader } from '../../../components';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabaseClient';
 
 export const OfferVerifierScreen: React.FC = () => {
+    const { profile } = useAuth();
+    const [countryData, setCountryData] = React.useState<{ nombre: string, moneda: string, simbolo_moneda: string } | null>(null);
+
+    React.useEffect(() => {
+        const fetchCountry = async () => {
+            if (profile?.pais_destino_id) {
+                const { data } = await supabase
+                    .from('paises')
+                    .select('nombre, moneda, simbolo_moneda')
+                    .eq('id', profile.pais_destino_id)
+                    .single();
+                if (data) setCountryData(data);
+            }
+        };
+        fetchCountry();
+    }, [profile?.pais_destino_id]);
+
+    const countryName = countryData?.nombre || 'tu destino';
+    const currency = countryData?.simbolo_moneda || '$';
+
     return (
         <div className="flex flex-col h-full bg-background-light dark:bg-background-dark animate-fade-in w-full max-w-2xl mx-auto">
             <BackHeader title="Verificador de Ofertas" />
@@ -23,7 +45,7 @@ export const OfferVerifierScreen: React.FC = () => {
                             <span className="text-xs font-bold text-danger dark:text-red-300">Riesgo Crítico Detectado</span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[260px] mx-auto leading-relaxed">
-                            Esta oferta tiene múltiples indicadores de fraude comunes en Suiza.
+                            Esta oferta tiene múltiples indicadores de fraude comunes en {countryName}.
                         </p>
                     </div>
                 </div>
@@ -42,10 +64,10 @@ export const OfferVerifierScreen: React.FC = () => {
                             </div>
                             <div className="space-y-3">
                                 <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-                                    Se ha detectado una promesa de <span className="font-bold text-gray-900 dark:text-white">5 horas de trabajo</span> por un salario de <span className="font-bold text-gray-900 dark:text-white">8,000 CHF</span>.
+                                    Se ha detectado una promesa de <span className="font-bold text-gray-900 dark:text-white">5 horas de trabajo</span> por un salario de <span className="font-bold text-gray-900 dark:text-white">8,000 {currency}</span>.
                                 </p>
                                 <p className="text-danger dark:text-red-300 text-xs font-medium bg-danger-bg dark:bg-red-900/20 p-2 rounded border border-red-100 dark:border-red-900/30">
-                                    Esto es estadísticamente imposible en el mercado suizo.
+                                    Esto es estadísticamente imposible en el mercado de {countryName}.
                                 </p>
                             </div>
                             <div className="mt-5">
@@ -78,7 +100,7 @@ export const OfferVerifierScreen: React.FC = () => {
                             <div className="flex flex-col gap-1">
                                 <p className="text-[#111815] dark:text-white text-sm font-bold">Gramática Pobre</p>
                                 <p className="text-gray-500 dark:text-gray-400 text-xs leading-normal">
-                                    Uso incorrecto de términos alemanes suizos estándar. Posible traducción automática.
+                                    Uso incorrecto de términos del idioma local. Posible traducción automática realizada por estafadores.
                                 </p>
                             </div>
                         </div>

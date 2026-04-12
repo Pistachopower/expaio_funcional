@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BackHeader, InfoButton } from '../../../components';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabaseClient';
 
 interface DirectoryItem {
     id: string;
@@ -120,10 +122,64 @@ const DIRECTORY_ITEMS: DirectoryItem[] = [
 ];
 
 export const DirectoryScreen: React.FC = () => {
+    const { profile } = useAuth();
+    const [items, setItems] = useState<DirectoryItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState<'Todos' | 'Legal' | 'Medical' | 'Education' | 'Other'>('Todos');
+    const [destinationName, setDestinationName] = useState('Suiza');
 
-    const filteredItems = DIRECTORY_ITEMS.filter(item => {
+    useEffect(() => {
+        const fetchDirectory = async () => {
+            if (!profile?.pais_destino_id) {
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                // Fetch Country Name
+                const { data: country } = await supabase
+                    .from('paises')
+                    .select('nombre')
+                    .eq('id', profile.pais_destino_id)
+                    .single();
+                if (country) setDestinationName(country.nombre);
+
+                // Fetch Directory Items
+                const { data, error } = await supabase
+                    .from('directorio')
+                    .select('*')
+                    .eq('pais_id', profile.pais_destino_id);
+
+                if (error) throw error;
+
+                if (data) {
+                    const mappedItems: DirectoryItem[] = data.map(item => ({
+                        id: item.id,
+                        name: item.nombre,
+                        type: (item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1)) as any,
+                        tag: item.tag,
+                        location: item.ubicacion,
+                        description: item.descripcion,
+                        image: item.imagen_url || 'https://ui-avatars.com/api/?name=' + item.nombre,
+                        verified: item.verificado,
+                        phoneNumber: item.telefono,
+                        email: item.email,
+                        website: item.sitio_web
+                    }));
+                    setItems(mappedItems);
+                }
+            } catch (err) {
+                console.error('Error fetching directory:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDirectory();
+    }, [profile?.pais_destino_id]);
+
+    const filteredItems = items.filter(item => {
         const matchesSearch =
             item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -136,10 +192,10 @@ export const DirectoryScreen: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full bg-background-light dark:bg-background-dark pb-24 overflow-y-auto animate-fade-in w-full max-w-5xl mx-auto">
-            <BackHeader title="Directorio Verificado" />
+            <BackHeader title={`Directorio en ${destinationName}`} />
             <div className="bg-surface-light dark:bg-surface-dark px-4 pb-4 pt-2">
                 <div className="flex items-center mb-4">
-                    <h1 className="text-[#111815] dark:text-white tracking-tight text-[26px] font-bold leading-tight text-left">Directorio</h1>
+                    <h1 className="text-[#111815] dark:text-white tracking-tight text-[26px] font-bold leading-tight text-left">Directorio {destinationName}</h1>
                     <InfoButton
                         title="Directorio de Contactos"
                         text="Una lista curada de organizaciones, escuelas y servicios legales que ayudan específicamente a los recién llegados. Todos los perfiles con el check naranja han sido verificados por nosotros."
@@ -205,7 +261,12 @@ export const DirectoryScreen: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                {filteredItems.length > 0 ? (
+                {isLoading ? (
+                    <div className="col-span-full py-20 flex flex-col items-center justify-center">
+                        <span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">refresh</span>
+                        <p className="text-gray-500">Cargando directorio de {destinationName}...</p>
+                    </div>
+                ) : filteredItems.length > 0 ? (
                     filteredItems.map(item => (
                         <div key={item.id} className="flex flex-col gap-3 bg-white dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 animate-fade-in hover:border-primary/30 transition-colors">
                             <div className="flex items-start gap-4">
@@ -250,9 +311,12 @@ export const DirectoryScreen: React.FC = () => {
                         </div>
                     ))
                 ) : (
-                    <div className="col-span-full flex flex-col items-center justify-center py-10 text-center opacity-60">
-                        <span className="material-symbols-outlined text-4xl mb-2">search_off</span>
-                        <p>No se encontraron resultados.</p>
+                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-center opacity-60">
+                        <div className="size-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                            <span className="material-symbols-outlined text-4xl">travel_explore</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Directorios pronto en {destinationName}</h3>
+                        <p className="max-w-xs text-sm">Nuestro equipo está verificando ONGs y servicios legales en {destinationName}. ¡Vuelve pronto!</p>
                     </div>
                 )}
             </div>

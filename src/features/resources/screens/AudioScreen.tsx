@@ -1,44 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSignedAudioUrl } from '../../../api/repositories/AudioRepository';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabaseClient';
 
-const audioFiles = [
-  {
-    filename: '1_El_salto_hacia_ti_mismo.mp3',
-    title: 'La barrera del idioma',
-    description: 'Estrategias para el alemán y francés sin miedo.',
-    duration: '4:45',
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    filename: '2_Adaptars_no_es_perder_tu_identidad_es-ampliarla.mp3',
-    title: 'Mi primer año en Berna',
-    description: 'Gestionando las expectativas y la montaña rusa emocional.',
-    duration: '6:15',
-    image: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    filename: '3_Zurich_donde_la_disciplina_se_encuentra_con_la_calidad_de_vida.mp3',
-    title: 'Proceso de planificación',
-    description: 'Dominando la logística suiza.',
-    duration: '5:30',
-    image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=400&q=80',
-    featured: true,
-  },
-  {
-    filename: '4_El_idioma_no_es_un_muro_es_una_llave.mp3',
-    title: 'El idioma no es un muro',
-    description: 'El idioma como llave para nuevas oportunidades.',
-    duration: '3:50',
-    image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=400&q=80',
-  },
-];
+interface AudioFile {
+    id: string;
+    filename: string;
+    title: string;
+    description: string;
+    duration: string;
+    image: string;
+    featured?: boolean;
+}
+
+// Hardcoded fallback removed, now using Supabase
 
 const AudioScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
   const [audioUrls, setAudioUrls] = useState<{ [key: string]: string | null }>({});
   const [audioDurations, setAudioDurations] = useState<{ [key: string]: number }>({});
-  const [current, setCurrent] = useState<null | typeof audioFiles[0]>(null);
+  const [current, setCurrent] = useState<null | AudioFile>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [progress, setProgress] = useState(0);
@@ -46,24 +30,56 @@ const AudioScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadUrls = async () => {
+    const fetchAudios = async () => {
       setIsLoading(true);
-      for (const file of audioFiles) {
-        const url = await getSignedAudioUrl(file.filename);
-        setAudioUrls((prev) => ({ ...prev, [file.filename]: url }));
+      try {
+        const destId = profile?.pais_destino_id;
         
-        // Cargar duración real del audio
-        if (url) {
-          const tempAudio = new Audio(url);
-          tempAudio.addEventListener('loadedmetadata', () => {
-            setAudioDurations((prev) => ({ ...prev, [file.filename]: tempAudio.duration }));
-          });
+        const { data, error } = await supabase
+          .from('audios_integracion')
+          .select('*')
+          .or(destId ? `pais_id.eq.${destId},pais_id.is.null` : 'pais_id.is.null');
+
+        if (error) throw error;
+
+        if (data) {
+          const mapped: AudioFile[] = data.map(item => ({
+            id: item.id,
+            filename: item.filename,
+            title: item.titulo,
+            description: item.descripcion,
+            duration: item.duracion,
+            image: item.imagen_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=400&q=80',
+            featured: item.featured
+          }));
+          setAudioFiles(mapped);
+
+          // Prepare Signed URLs
+          const urls: { [key: string]: string | null } = {};
+          for (const file of mapped) {
+            const url = await getSignedAudioUrl(file.filename);
+            urls[file.filename] = url;
+            
+            if (url) {
+              const tempAudio = new Audio(url);
+              tempAudio.addEventListener('loadedmetadata', () => {
+                setAudioDurations((prev) => ({ ...prev, [file.filename]: tempAudio.duration }));
+              });
+            }
+          }
+          setAudioUrls(urls);
         }
+      } catch (err) {
+        console.error('Error fetching audios:', err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
-    loadUrls();
-  }, []);
+
+    if (profile) {
+      fetchAudios();
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (audio) {
@@ -83,7 +99,7 @@ const AudioScreen: React.FC = () => {
     };
   }, [audio]);
 
-  const playAudio = (file: typeof audioFiles[0]) => {
+  const playAudio = (file: AudioFile) => {
     if (audio) {
       audio.pause();
       audio.currentTime = 0;
@@ -111,7 +127,7 @@ const AudioScreen: React.FC = () => {
   };
 
   // Manejar click en un audio de la lista
-  const handleAudioClick = (file: typeof audioFiles[0]) => {
+  const handleAudioClick = (file: AudioFile) => {
     if (current) {
       // Si ya hay algo en reproducción, cambiar a ese audio o toggle play/pause
       if (current.filename === file.filename) {
@@ -187,7 +203,7 @@ const AudioScreen: React.FC = () => {
   }
 
   // Obtener la duración real o la estática como fallback
-  const getRealDuration = (file: typeof audioFiles[0]) => {
+  const getRealDuration = (file: AudioFile) => {
     const realDuration = audioDurations[file.filename];
     if (realDuration) {
       return formatTime(realDuration);

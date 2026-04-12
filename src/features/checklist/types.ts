@@ -16,4 +16,5 @@ export interface Task {
     link?: string;
     isSystem?: boolean;
     details?: TaskDetails;
+    countryName?: string;
 }

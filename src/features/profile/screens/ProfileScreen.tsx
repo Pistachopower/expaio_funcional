@@ -14,20 +14,25 @@ export const ProfileScreen: React.FC = () => {
     const [userData, setUserData] = useState<any>(() => {
         const saved = localStorage.getItem('swisslife_profile');
         return saved ? JSON.parse(saved) : {
-            name: 'Cargando...',
             firstName: '',
             lastName: '',
             username: '',
             email: '',
             phone: '',
-            canton: 'Zürich',
-            permit: 'Permiso B',
-            arrival: '',
-            sector: '',
-            studies: '',
+            pais_destino_id: '',
             photo: 'https://ui-avatars.com/api/?name=?&background=638878&color=fff'
         };
     });
+
+    const [countries, setCountries] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            const { data } = await supabase.from('paises').select('id, nombre').order('nombre');
+            if (data) setCountries(data);
+        };
+        fetchCountries();
+    }, []);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -37,18 +42,13 @@ export const ProfileScreen: React.FC = () => {
 
             if (data) {
                 const profileData = {
-                    name: data.full_name || 'Usuario',
-                    firstName: data.first_name || '',
-                    lastName: data.last_name || '',
+                    firstName: data.nombre || '',
+                    lastName: data.apellido || '',
                     username: data.username || '',
                     email: user.email || '',
-                    phone: data.phone || '',
-                    canton: data.canton || 'Zürich',
-                    permit: data.permit || 'Permiso B',
-                    arrival: data.arrival_date || '',
-                    sector: data.sector || '',
-                    studies: data.studies || '',
-                    photo: data.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.full_name || 'U')}&background=638878&color=fff`
+                    phone: data.telefono || '',
+                    pais_destino_id: data.pais_destino_id || '',
+                    photo: data.foto_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.nombre || 'U')}&background=638878&color=fff`
                 };
                 setUserData(profileData);
                 localStorage.setItem('swisslife_profile', JSON.stringify(profileData));
@@ -66,17 +66,12 @@ export const ProfileScreen: React.FC = () => {
 
         try {
             await ProfileRepository.updateProfile(user.id, {
-                full_name: `${userData.firstName} ${userData.lastName}`.trim(),
-                first_name: userData.firstName,
-                last_name: userData.lastName,
+                nombre: userData.firstName,
+                apellido: userData.lastName,
                 username: userData.username,
-                canton: userData.canton,
-                permit: userData.permit,
-                arrival_date: userData.arrival,
-                sector: userData.sector,
-                studies: userData.studies,
-                avatar_url: userData.photo,
-                phone: userData.phone
+                foto_url: userData.photo,
+                telefono: userData.phone,
+                pais_destino_id: userData.pais_destino_id || null
             });
 
             localStorage.setItem('swisslife_profile', JSON.stringify(userData));
@@ -205,36 +200,16 @@ export const ProfileScreen: React.FC = () => {
                                 className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a2e26] p-3 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Cantón</label>
-                                <select
-                                    value={userData.canton}
-                                    onChange={(e) => setUserData({ ...userData, canton: e.target.value })}
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a2e26] p-3 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm"
-                                >
-                                    <option>Zürich</option>
-                                    <option>Bern</option>
-                                    <option>Geneva</option>
-                                    <option>Basel</option>
-                                    <option>Vaud</option>
-                                    <option>Lucerne</option>
-                                    <option>Ticino</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">Permiso</label>
-                                <select
-                                    value={userData.permit}
-                                    onChange={(e) => setUserData({ ...userData, permit: e.target.value })}
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a2e26] p-3 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm"
-                                >
-                                    <option>Permiso L</option>
-                                    <option>Permiso B</option>
-                                    <option>Permiso C</option>
-                                    <option>Permiso G</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">País al que quieres ir (Destino)</label>
+                            <select
+                                value={userData.pais_destino_id}
+                                onChange={(e) => setUserData({ ...userData, pais_destino_id: e.target.value })}
+                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a2e26] p-3 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm"
+                            >
+                                <option value="">Selecciona tu destino...</option>
+                                {countries.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                            </select>
                         </div>
                     </div>
 
@@ -364,26 +339,13 @@ export const ProfileScreen: React.FC = () => {
 
             <div className="p-4 space-y-6 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
                 <div className="space-y-6">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div className="bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center">
+                    <div className="grid grid-cols-1 gap-3">
+                        <div className="bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center">
                             <span className="material-symbols-outlined text-blue-500 mb-1">location_on</span>
-                            <span className="text-xs text-gray-400 font-medium uppercase">Cantón</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white">{userData.canton}</span>
-                        </div>
-                        <div className="bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center">
-                            <span className="material-symbols-outlined text-purple-500 mb-1">calendar_month</span>
-                            <span className="text-xs text-gray-400 font-medium uppercase">Llegada</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white">{userData.arrival}</span>
-                        </div>
-                        <div className="bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center">
-                            <span className="material-symbols-outlined text-orange-500 mb-1">work</span>
-                            <span className="text-xs text-gray-400 font-medium uppercase">Sector</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white truncate w-full">{userData.sector || '-'}</span>
-                        </div>
-                        <div className="bg-white dark:bg-card-dark p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center">
-                            <span className="material-symbols-outlined text-green-500 mb-1">school</span>
-                            <span className="text-xs text-gray-400 font-medium uppercase">Estudios</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white truncate w-full">{userData.studies || '-'}</span>
+                            <span className="text-xs text-gray-400 font-medium uppercase">País de Destino</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                {countries.find(c => c.id === userData.pais_destino_id)?.nombre || 'No seleccionado'}
+                            </span>
                         </div>
                     </div>
 

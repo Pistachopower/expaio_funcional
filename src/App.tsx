@@ -9,18 +9,13 @@ import { OfferVerifierScreen } from './features/safety/screens/OfferVerifierScre
 import { HousingVerificationScreen } from './features/safety/screens/HousingVerificationScreen';
 import { DirectoryScreen } from './features/resources/screens/DirectoryScreen';
 import { CalculatorScreen } from './features/resources/screens/CalculatorScreen';
-import { TaxGuideScreen } from './features/resources/screens/TaxGuideScreen';
-import { InsuranceGuideScreen } from './features/resources/screens/InsuranceGuideScreen';
-import { RentGuideScreen } from './features/resources/screens/RentGuideScreen';
-import { LaborGuideScreen } from './features/resources/screens/LaborGuideScreen';
-import { JobGuideScreen } from './features/resources/screens/JobGuideScreen';
-import { TransportGuideScreen } from './features/resources/screens/TransportGuideScreen';
+import AudioScreen from './features/resources/screens/AudioScreen';
+import { InitialGuideScreen } from './features/resources/screens/InitialGuideScreen';
+import { GuideScreen } from './features/resources/screens/GuideScreen';
 import { ChatScreen } from './features/chat/screens/ChatScreen';
 import { AuthScreen } from './features/auth/screens/AuthScreen';
 import { UpdatePasswordScreen } from './features/auth/screens/UpdatePasswordScreen';
 import { AboutUsScreen } from './features/about/screens/AboutUsScreen';
-import AudioScreen from './features/resources/screens/AudioScreen';
-import { InitialGuideScreen } from './features/resources/screens/InitialGuideScreen';
 import { PendingScreen } from './features/profile/screens/PendingScreen';
 import { AdminDashboard } from './features/profile/screens/AdminDashboard';
 
@@ -68,12 +63,14 @@ const App: React.FC = () => {
                                 <Route path="/directory" element={<ProtectedRoute><DirectoryScreen /></ProtectedRoute>} />
                                 <Route path="/checklist" element={<ProtectedRoute><ChecklistScreen /></ProtectedRoute>} />
                                 <Route path="/calculator" element={<ProtectedRoute><CalculatorScreen /></ProtectedRoute>} />
-                                <Route path="/tax-guide" element={<ProtectedRoute><TaxGuideScreen /></ProtectedRoute>} />
-                                <Route path="/insurance-guide" element={<ProtectedRoute><InsuranceGuideScreen /></ProtectedRoute>} />
-                                <Route path="/rent-guide" element={<ProtectedRoute><RentGuideScreen /></ProtectedRoute>} />
-                                <Route path="/labor-guide" element={<ProtectedRoute><LaborGuideScreen /></ProtectedRoute>} />
-                                <Route path="/job-guide" element={<ProtectedRoute><JobGuideScreen /></ProtectedRoute>} />
-                                <Route path="/transport-guide" element={<ProtectedRoute><TransportGuideScreen /></ProtectedRoute>} />
+                                <Route path="/guia/:tipo" element={<ProtectedRoute><GuideScreen /></ProtectedRoute>} />
+                                {/* Mantener rutas viejas por retrocompatibilidad temporal o redirección si es necesario */}
+                                <Route path="/tax-guide" element={<ProtectedRoute><Navigate to="/guia/impuestos" replace /></ProtectedRoute>} />
+                                <Route path="/insurance-guide" element={<ProtectedRoute><Navigate to="/guia/seguros" replace /></ProtectedRoute>} />
+                                <Route path="/rent-guide" element={<ProtectedRoute><Navigate to="/guia/alquiler" replace /></ProtectedRoute>} />
+                                <Route path="/labor-guide" element={<ProtectedRoute><Navigate to="/guia/trabajo" replace /></ProtectedRoute>} />
+                                <Route path="/job-guide" element={<ProtectedRoute><Navigate to="/guia/trabajo" replace /></ProtectedRoute>} />
+                                <Route path="/transport-guide" element={<ProtectedRoute><Navigate to="/guia/transporte" replace /></ProtectedRoute>} />
                                 <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
                                 <Route path="/chat" element={<ProtectedRoute><ChatScreen /></ProtectedRoute>} />
                                 <Route path="/audios-integracion" element={<ProtectedRoute><AudioScreen /></ProtectedRoute>} />

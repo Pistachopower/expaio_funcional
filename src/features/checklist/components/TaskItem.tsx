@@ -47,7 +47,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, onDelete, on
                         {task.description}
                     </p>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                        {task.countryName && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-card-dark px-1.5 py-0.5 rounded border border-gray-100 dark:border-gray-800">
+                                {task.countryName}
+                            </span>
+                        )}
                         {task.details && (
                             <button
                                 onClick={() => onSelect(task)}

@@ -12,6 +12,8 @@ export interface UserProfile {
     idioma_preferido: string | null;
     telefono: string | null;
     descripcion: string | null;
+    pais_destino_id: string | null;
+    username: string | null;
     acepta_marketing: boolean;
     como_nos_conocio?: string;
     rol: string;

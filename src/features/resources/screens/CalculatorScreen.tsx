@@ -1,11 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BackHeader } from '../../../components';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabaseClient';
 
 export const CalculatorScreen: React.FC = () => {
+    const { profile } = useAuth();
+    
+    // Country & Currency State
+    const [destCountry, setDestCountry] = useState({ nombre: 'Suiza', moneda: 'CHF', simbolo: 'CHF' });
+    const [originCurrency, setOriginCurrency] = useState('EUR');
+    const [originSymbol, setOriginSymbol] = useState('€');
+    const [exchangeRate, setExchangeRate] = useState(0.94); // Default EUR/CHF
+    const [isLoading, setIsLoading] = useState(true);
+
     // Inputs Principales
-    const [budgetEur, setBudgetEur] = useState(5000);
+    const [budgetOrigin, setBudgetOrigin] = useState(5000);
     const [months, setMonths] = useState(3);
-    const [flightEur, setFlightEur] = useState(250);
+    const [flightOrigin, setFlightOrigin] = useState(250);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (profile) {
+                // Fetch Destination Info
+                if (profile.pais_destino_id) {
+                    const { data: dest } = await supabase
+                        .from('paises')
+                        .select('nombre, moneda, simbolo_moneda')
+                        .eq('id', profile.pais_destino_id)
+                        .single();
+                    if (dest) {
+                        setDestCountry({
+                            nombre: dest.nombre,
+                            moneda: dest.moneda,
+                            simbolo: dest.simbolo_moneda
+                        });
+                    }
+                }
+
+                // Fetch Origin Info
+                if (profile.pais_origen_id) {
+                    const { data: origin } = await supabase
+                        .from('paises')
+                        .select('moneda, simbolo_moneda')
+                        .eq('id', profile.pais_origen_id)
+                        .single();
+                    if (origin) {
+                        setOriginCurrency(origin.moneda);
+                        setOriginSymbol(origin.simbolo_moneda);
+                    }
+                }
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [profile]);
+
+    // Simple exchange rate effect (mock for now, could be API)
+    useEffect(() => {
+        if (originCurrency === destCountry.moneda) {
+            setExchangeRate(1);
+        } else if (originCurrency === 'EUR' && destCountry.moneda === 'CHF') {
+            setExchangeRate(0.94);
+        } else if (originCurrency === 'EUR' && destCountry.moneda === 'USD') {
+            setExchangeRate(1.08);
+        } else {
+            setExchangeRate(1); // Fallback
+        }
+    }, [originCurrency, destCountry.moneda]);
 
     // Lista de Gastos (Básicos + Personalizados)
     interface ExpenseItem {
@@ -29,24 +90,21 @@ export const CalculatorScreen: React.FC = () => {
     // State for delete confirmation modal
     const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
 
-    // Constants
-    const EUR_TO_CHF = 0.94;
-
     // Calculations
-    const budgetInChf = Math.round(budgetEur * EUR_TO_CHF);
+    const budgetInDest = Math.round(budgetOrigin * exchangeRate);
 
     // Total Mensual Recurrente
-    const monthlyTotalChf = expenses.reduce((acc, item) => acc + item.amount, 0);
+    const monthlyTotalDest = expenses.reduce((acc, item) => acc + item.amount, 0);
 
     // Costos Únicos
-    const oneTimeCostsChf = Math.round(flightEur * EUR_TO_CHF);
+    const oneTimeCostsDest = Math.round(flightOrigin * exchangeRate);
 
     // Gran Total Requerido
-    const totalRequiredChf = oneTimeCostsChf + (monthlyTotalChf * months);
+    const totalRequiredDest = oneTimeCostsDest + (monthlyTotalDest * months);
 
-    const balance = budgetInChf - totalRequiredChf;
+    const balance = budgetInDest - totalRequiredDest;
     const isViable = balance >= 0;
-    const percentCovered = Math.min(100, Math.max(0, (budgetInChf / totalRequiredChf) * 100));
+    const percentCovered = Math.min(100, Math.max(0, (budgetInDest / totalRequiredDest) * 100));
 
     // Handlers
     const updateExpense = (id: string, amount: number) => {
@@ -87,7 +145,7 @@ export const CalculatorScreen: React.FC = () => {
                 title="Viabilidad de Mudanza"
                 showHelp={true}
                 helpTitle="¿Cómo funciona?"
-                helpText="Esta calculadora estima si tus ahorros son suficientes para vivir en Suiza sin ingresos durante el tiempo que elijas. Incluye el tipo de cambio actual y los gastos básicos obligatorios (alquiler, seguro, comida)."
+                helpText={`Esta calculadora estima si tus ahorros son suficientes para vivir en ${destCountry.nombre} sin ingresos durante el tiempo que elijas. Incluye el tipo de cambio actual y los gastos básicos estimados.`}
             />
 
             {/* Header Result Card */}
@@ -109,8 +167,8 @@ export const CalculatorScreen: React.FC = () => {
 
                     <p className="text-sm opacity-80 mb-4">
                         {isViable
-                            ? `Tienes un colchón extra de CHF ${balance.toLocaleString()} para imprevistos.`
-                            : `Necesitas CHF ${Math.abs(balance).toLocaleString()} más para cubrir ${months} meses.`}
+                            ? `Tienes un colchón extra de ${destCountry.simbolo} ${balance.toLocaleString()} para imprevistos.`
+                            : `Necesitas ${destCountry.simbolo} ${Math.abs(balance).toLocaleString()} más para cubrir ${months} meses.`}
                     </p>
 
                     <div className="w-full bg-white/50 dark:bg-black/20 rounded-full h-2 overflow-hidden">
@@ -134,15 +192,15 @@ export const CalculatorScreen: React.FC = () => {
                         <div className="space-y-4">
                             <div>
                                 <label className="flex justify-between text-xs font-semibold text-gray-500 mb-1">
-                                    <span>Presupuesto Actual (Euros)</span>
-                                    <span className="text-primary">≈ {budgetInChf} CHF</span>
+                                    <span>Presupuesto Actual ({originCurrency})</span>
+                                    <span className="text-primary">≈ {budgetInDest} {destCountry.simbolo}</span>
                                 </label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-400">€</span>
+                                    <span className="absolute left-3 top-2.5 text-gray-400">{originSymbol}</span>
                                     <input
                                         type="number"
-                                        value={budgetEur}
-                                        onChange={(e) => setBudgetEur(Number(e.target.value))}
+                                        value={budgetOrigin}
+                                        onChange={(e) => setBudgetOrigin(Number(e.target.value))}
                                         className="w-full pl-8 pr-3 py-2 rounded-lg bg-gray-50 dark:bg-[#11211a] border-gray-200 dark:border-gray-700 focus:border-primary focus:ring-primary text-sm font-bold"
                                     />
                                 </div>
@@ -188,26 +246,26 @@ export const CalculatorScreen: React.FC = () => {
                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Costos Únicos</h4>
                                 <div className="grid grid-cols-1 gap-3 mb-3">
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Vuelo / Viaje (€)</label>
-                                        <input type="number" value={flightEur} onChange={(e) => setFlightEur(Number(e.target.value))} className="w-full p-2 rounded-lg bg-gray-50 dark:bg-[#11211a] border-gray-200 dark:border-gray-700 text-sm" />
+                                        <label className="block text-xs text-gray-500 mb-1">Vuelo / Viaje ({originSymbol})</label>
+                                        <input type="number" value={flightOrigin} onChange={(e) => setFlightOrigin(Number(e.target.value))} className="w-full p-2 rounded-lg bg-gray-50 dark:bg-[#11211a] border-gray-200 dark:border-gray-700 text-sm" />
                                     </div>
                                 </div>
                                 <div className="flex justify-between text-sm bg-gray-50 dark:bg-[#1e2e28] p-2 rounded-lg">
-                                    <span className="text-gray-600 dark:text-gray-400">Total Inicial (CHF)</span>
-                                    <span className="font-bold dark:text-white">{oneTimeCostsChf.toLocaleString()}</span>
+                                    <span className="text-gray-600 dark:text-gray-400">Total Inicial ({destCountry.simbolo})</span>
+                                    <span className="font-bold dark:text-white">{oneTimeCostsDest.toLocaleString()}</span>
                                 </div>
                             </div>
 
                             {/* Recurring */}
                             <div>
                                 <div className="flex justify-between items-center mb-3">
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mensual (CHF)</h4>
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mensual ({destCountry.simbolo})</h4>
                                     {!isAdding && (
                                         <button onClick={() => setIsAdding(true)} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
                                             <span className="material-symbols-outlined text-[14px]">add</span> Añadir Gasto
-                                        </button>
-                                    )}
-                                </div>
+                                         </button>
+                                     )}
+                                 </div>
 
                                 <div className="flex flex-col gap-3">
                                     {expenses.map(expense => (
@@ -246,7 +304,7 @@ export const CalculatorScreen: React.FC = () => {
                                                 />
                                                 <input
                                                     type="number"
-                                                    placeholder="Monto (CHF)"
+                                                    placeholder={`Monto (${destCountry.simbolo})`}
                                                     value={newExpenseAmount}
                                                     onChange={(e) => setNewExpenseAmount(e.target.value)}
                                                     className="w-full p-2 rounded-lg bg-white dark:bg-[#11211a] border-gray-200 dark:border-gray-700 text-sm"
@@ -267,7 +325,7 @@ export const CalculatorScreen: React.FC = () => {
 
                             <div className="pt-2 flex justify-between items-center border-t border-gray-100 dark:border-gray-800 mt-2">
                                 <span className="text-sm font-bold text-gray-900 dark:text-white">Gasto Mensual Total</span>
-                                <span className="text-lg font-bold text-primary">{monthlyTotalChf.toLocaleString()} CHF</span>
+                                <span className="text-lg font-bold text-primary">{monthlyTotalDest.toLocaleString()} {destCountry.simbolo}</span>
                             </div>
                         </div>
                     </section>
