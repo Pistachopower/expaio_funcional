@@ -9,6 +9,7 @@ interface AuthContextType {
     user: User | null;
     profile: UserProfile | null;
     loading: boolean;
+    refreshProfile: () => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -91,6 +92,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => subscription.unsubscribe();
     }, []);
 
+    const refreshProfile = async () => {
+        if (!user) return;
+        console.log('🔄 Refrescando perfil...');
+        try {
+            const fetchedProfile = await ProfileRepository.getProfile(user.id);
+            setProfile(fetchedProfile);
+            console.log('✅ Perfil refrescado exitosamente');
+        } catch (error) {
+            console.error('❌ Error al refrescar perfil:', error);
+        }
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
     };
@@ -100,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         profile,
         loading,
+        refreshProfile,
         signOut,
     };
 

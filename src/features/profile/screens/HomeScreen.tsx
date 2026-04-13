@@ -6,10 +6,12 @@ import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../../../lib/supabaseClient';
 
 export const HomeScreen: React.FC = () => {
-    const { profile } = useAuth();
+    const { profile, refreshProfile } = useAuth();
     const { userName, userPhoto } = useProfile(profile);
     const [countries, setCountries] = React.useState<any[]>([]);
     const [destinationCountry, setDestinationCountry] = React.useState<string | null>(null);
+    const [isUpdating, setIsUpdating] = React.useState(false);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
 
     React.useEffect(() => {
         const fetchCountries = async () => {
@@ -26,14 +28,23 @@ export const HomeScreen: React.FC = () => {
     }, [profile?.pais_destino_id]);
 
     const handleCountryChange = async (countryId: string) => {
-        if (!profile?.id) return;
-        const { error } = await supabase
-            .from('perfiles')
-            .update({ pais_destino_id: countryId })
-            .eq('id', profile.id);
+        if (!profile?.id || isUpdating) return;
         
-        if (!error) {
-            window.location.reload(); // Quick refresh to update all contexts
+        setIsUpdating(true);
+        try {
+            const { error } = await supabase
+                .from('perfiles')
+                .update({ pais_destino_id: countryId })
+                .eq('id', profile.id);
+            
+            if (error) throw error;
+            
+            await refreshProfile();
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error('Error al cambiar de país:', error);
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -50,7 +61,8 @@ export const HomeScreen: React.FC = () => {
         : `Todo lo que necesitas para tu proceso de migración y establecimiento en ${destinationCountry || 'tu destino'}.`;
 
     return (
-        <div className="flex flex-col h-full animate-fade-in w-full">
+        <>
+            <div className="flex flex-col h-full animate-fade-in w-full">
             <header className="px-6 pt-10 pb-6 w-full max-w-5xl mx-auto">
                 <div className="flex justify-between items-start mb-1">
                     <div className="flex flex-col gap-1">
@@ -71,19 +83,6 @@ export const HomeScreen: React.FC = () => {
                     <Link to="/profile" className="size-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden border-2 border-white dark:border-gray-600 shadow-sm mt-1 hover:scale-105 transition-transform">
                         <img src={userPhoto} alt="Profile" className="w-full h-full object-cover" />
                     </Link>
-                </div>
-
-                {/* Country Quick Selector */}
-                <div className="flex items-center gap-2 mt-4 bg-white/50 dark:bg-card-dark/50 backdrop-blur-sm p-2 px-3 rounded-2xl border border-gray-100 dark:border-gray-800 w-fit">
-                    <span className="material-symbols-outlined text-gray-500 text-sm">location_on</span>
-                    <select 
-                        value={profile?.pais_destino_id || ''} 
-                        onChange={(e) => handleCountryChange(e.target.value)}
-                        className="bg-transparent text-xs font-bold text-gray-600 dark:text-gray-300 focus:outline-none cursor-pointer"
-                    >
-                        <option value="">Selecciona tu destino...</option>
-                        {countries.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                    </select>
                 </div>
             </header>
 
@@ -140,6 +139,20 @@ export const HomeScreen: React.FC = () => {
                         </div>
                     </Link>
                 )}
+
+                {/* Destination Banner */}
+                <div className="bg-white/40 dark:bg-card-dark/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 flex justify-between items-center group">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] uppercase tracking-widest text-[#638878] font-bold mb-0.5">Destino actual</span>
+                        <p className="text-sm font-bold text-[#111815] dark:text-white">{destinationCountry || 'Sin seleccionar'}</p>
+                    </div>
+                    <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="text-xs font-bold text-primary hover:underline transition-all"
+                    >
+                        {isUpdating ? 'Actualizando...' : 'Cambiar'}
+                    </button>
+                </div>
 
                 {/* Emigrant Only Content */}
                 {(isEmigrante || isAdmin) && (
@@ -283,5 +296,48 @@ export const HomeScreen: React.FC = () => {
                 )}
             </div>
         </div>
+
+        {/* Minimalist Country Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-4">
+                    <div 
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        onClick={() => !isUpdating && setIsModalOpen(false)}
+                    ></div>
+                    <div className="relative bg-white dark:bg-card-dark w-full max-w-sm rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden animate-slide-up border border-gray-100 dark:border-gray-800">
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                            <h3 className="font-bold text-[#111815] dark:text-white">Seleccionar destino</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="size-8 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                                <span className="material-symbols-outlined text-gray-500">close</span>
+                            </button>
+                        </div>
+                        <div className="max-h-[60vh] overflow-y-auto p-2 no-scrollbar">
+                            {countries.map(c => (
+                                <button
+                                    key={c.id}
+                                    onClick={() => handleCountryChange(c.id)}
+                                    disabled={isUpdating}
+                                    className={`w-full text-left px-5 py-4 rounded-xl text-sm font-medium transition-all flex justify-between items-center mb-1
+                                        ${profile?.pais_destino_id === c.id 
+                                            ? 'bg-primary/10 text-primary' 
+                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
+                                        }`}
+                                >
+                                    {c.nombre}
+                                    {profile?.pais_destino_id === c.id && (
+                                        <span className="material-symbols-outlined text-sm">check_circle</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                        {isUpdating && (
+                            <div className="absolute inset-0 bg-white/60 dark:bg-card-dark/60 backdrop-blur-[2px] flex items-center justify-center">
+                                <div className="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
