@@ -41,7 +41,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const App: React.FC = () => {
     return (
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <div className="flex h-screen w-full bg-background-light dark:bg-background-dark text-[#111815] dark:text-white overflow-hidden relative">
                 {/* Desktop Sidebar */}
                 <SideNav />

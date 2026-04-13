@@ -23,24 +23,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         // Check active sessions and sets the user
         const initializeAuth = async () => {
+            console.log('🔄 Autenticación: Iniciando verificación de sesión...');
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error('❌ Error obteniendo sesión:', sessionError);
+                    throw sessionError;
+                }
+
+                console.log('✅ Sesión recuperada:', session ? 'Usuario autenticado' : 'Sin sesión activa');
                 setSession(session);
                 setUser(session?.user ?? null);
                 
                 if (session?.user) {
-                    const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
-                    setProfile(fetchedProfile);
+                    console.log('🔄 Perfil: Cargando datos para el usuario:', session.user.id);
+                    try {
+                        const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
+                        console.log('✅ Perfil cargado:', fetchedProfile ? 'Existente' : 'No encontrado');
+                        setProfile(fetchedProfile);
+                    } catch (profileError) {
+                        console.error('❌ Error cargando perfil:', profileError);
+                        setProfile(null);
+                    }
                 } else {
                     setProfile(null);
                 }
             } catch (error) {
-                console.error('Auth initialization error:', error);
+                console.error('💥 Error crítico en inicialización de Auth:', error);
             } finally {
+                console.log('🏁 Autenticación: Inicialización completada.');
                 setLoading(false);
             }
             
-            if (session && window.location.hash.includes('access_token')) {
+            if (window.location.hash.includes('access_token')) {
                 window.history.replaceState(null, '', window.location.pathname + window.location.search);
             }
         };
@@ -48,7 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         initializeAuth();
 
         // Listen for changes on auth state (logged in, signed out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('🔔 Evento de Auth detectado:', event);
             try {
                 setSession(session);
                 setUser(session?.user ?? null);
@@ -58,9 +75,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setProfile(fetchedProfile);
                 } else {
                     setProfile(null);
+                    setLoading(false); // Ensure loading is off if signed out
                 }
             } catch (error) {
-                console.error('Auth state change error:', error);
+                console.error('❌ Error en cambio de estado de Auth:', error);
             } finally {
                 setLoading(false);
             }
