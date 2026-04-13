@@ -23,18 +23,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         // Check active sessions and sets the user
         const initializeAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setUser(session?.user ?? null);
-            
-            if (session?.user) {
-                const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
-                setProfile(fetchedProfile);
-            } else {
-                setProfile(null);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                setSession(session);
+                setUser(session?.user ?? null);
+                
+                if (session?.user) {
+                    const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
+                    setProfile(fetchedProfile);
+                } else {
+                    setProfile(null);
+                }
+            } catch (error) {
+                console.error('Auth initialization error:', error);
+            } finally {
+                setLoading(false);
             }
             
-            setLoading(false);
             if (session && window.location.hash.includes('access_token')) {
                 window.history.replaceState(null, '', window.location.pathname + window.location.search);
             }
@@ -44,17 +49,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Listen for changes on auth state (logged in, signed out, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            
-            if (session?.user) {
-                const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
-                setProfile(fetchedProfile);
-            } else {
-                setProfile(null);
+            try {
+                setSession(session);
+                setUser(session?.user ?? null);
+                
+                if (session?.user) {
+                    const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
+                    setProfile(fetchedProfile);
+                } else {
+                    setProfile(null);
+                }
+            } catch (error) {
+                console.error('Auth state change error:', error);
+            } finally {
+                setLoading(false);
             }
             
-            setLoading(false);
             if (session && window.location.hash.includes('access_token')) {
                 window.history.replaceState(null, '', window.location.pathname + window.location.search);
             }
