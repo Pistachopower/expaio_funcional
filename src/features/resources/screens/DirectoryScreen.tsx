@@ -145,13 +145,16 @@ export const DirectoryScreen: React.FC = () => {
                     .single();
                 if (country) setDestinationName(country.nombre);
 
-                // Fetch Directory Items
+                // Fetch ONG Directory Items
                 const { data, error } = await supabase
                     .from('directorio')
                     .select('*')
                     .eq('pais_id', profile.pais_destino_id);
 
                 if (error) throw error;
+
+                // Empezar con el mapeo de los items estáticos/Directorio normal
+                let allItems: DirectoryItem[] = [];
 
                 if (data) {
                     const mappedItems: DirectoryItem[] = data.map(item => ({
@@ -167,8 +170,52 @@ export const DirectoryScreen: React.FC = () => {
                         email: item.email,
                         website: item.sitio_web
                     }));
-                    setItems(mappedItems);
+                    allItems = [...allItems, ...mappedItems];
                 }
+
+                // NUEVO: Fetch Live Experts (Profesores, Abogados) aprobados
+                const { data: expertosData } = await supabase
+                    .from('expertos')
+                    .select('usuario_id, biografia')
+                    .eq('aprobado', true);
+
+                if (expertosData && expertosData.length > 0) {
+                    const userIds = expertosData.map(e => e.usuario_id);
+                    
+                    const { data: perfilesData } = await supabase
+                        .from('perfiles')
+                        .select('id, nombre, apellido, rol, telefono, idioma_preferido, pais_destino_id')
+                        .in('id', userIds)
+                        .eq('pais_destino_id', profile.pais_destino_id);
+                        
+                    if (perfilesData) {
+                        const expertItems: DirectoryItem[] = perfilesData.map(perf => {
+                            const extData = expertosData.find(e => e.usuario_id === perf.id);
+                            
+                            // Map roles to types
+                            let itemType: 'Education' | 'Legal' | 'Other' = 'Other';
+                            if (perf.rol === 'profesor') itemType = 'Education';
+                            if (perf.rol === 'abogado') itemType = 'Legal';
+
+                            return {
+                                id: perf.id,
+                                name: `${perf.nombre} ${perf.apellido}`,
+                                type: itemType,
+                                tag: perf.rol === 'profesor' ? `Profesor de ${perf.idioma_preferido || 'Idiomas'}` : perf.rol.toUpperCase(),
+                                location: 'Especialista Verificado',
+                                description: extData?.biografia || `Ofrece sus servicios como ${perf.rol}. ¡Contacta para más información!`,
+                                image: `https://ui-avatars.com/api/?name=${perf.nombre}+${perf.apellido}&background=random`,
+                                verified: true, // They are approved real users
+                                phoneNumber: perf.telefono,
+                                email: '' // Si tuvieran perfil público de email podríamos colocarlo
+                            };
+                        });
+                        allItems = [...allItems, ...expertItems];
+                    }
+                }
+
+                setItems(allItems);
+
             } catch (err) {
                 console.error('Error fetching directory:', err);
             } finally {

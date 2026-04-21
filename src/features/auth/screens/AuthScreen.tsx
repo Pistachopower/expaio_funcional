@@ -1,6 +1,78 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabaseClient';
+
+const WORLD_COUNTRIES = [
+    "Afganistán", "Albania", "Alemania", "Andorra", "Angola", "Antigua y Barbuda",
+     "Arabia Saudita", "Argelia", "Argentina", "Armenia", "Australia", "Austria", "Azerbaiyán", "Bahamas", "Bangladés", "Barbados", "Baréin", "Bélgica", "Belice", "Benín", "Bielorrusia", "Birmania", "Bolivia", "Bosnia y Herzegovina", "Botsuana", "Brasil", "Brunéi", "Bulgaria", "Burkina Faso", "Burundi", "Bután", "Cabo Verde", "Camboya", "Camerún", "Canadá", "Catar", "Chad", "Chile", "China", "Chipre", "Ciudad del Vaticano", "Colombia", "Comoras", "Corea del Norte", "Corea del Sur", "Costa de Marfil", "Costa Rica", "Croacia", "Cuba", "Dinamarca", "Dominica", "Ecuador", "Egipto", "El Salvador", "Emiratos Árabes Unidos", "Eritrea", "Eslovaquia", "Eslovenia", "España", "Estados Unidos", "Estonia", "Esuatini", "Etiopía", "Filipinas", "Finlandia", "Fiyi", "Francia", "Gabón", "Gambia", "Georgia", "Ghana", "Granada", "Grecia", "Guatemala", "Guinea", "Guinea Ecuatorial", "Guinea-Bisáu", "Guyana", "Haití", "Honduras", "Hungría", "India", "Indonesia", "Irak", "Irán", "Irlanda", "Islandia", "Islas Marshall", "Islas Salomón", "Israel", "Italia", "Jamaica", "Japón", "Jordania", "Kazajistán", "Kenia", "Kirguistán", "Kiribati", "Kuwait", "Laos", "Lesoto", "Letonia", "Líbano", "Liberia", "Libia", "Liechtenstein", "Lituania", "Luxemburgo", "Macedonia del Norte", "Madagascar", "Malasia", "Malaui", "Maldivas", "Malí", "Malta", "Marruecos", "Mauricio", "Mauritania", "México", "Micronesia", "Moldavia", "Mónaco", "Mongolia", "Montenegro", "Mozambique", "Namibia", "Nauru", "Nepal", "Nicaragua", "Níger", "Nigeria", "Noruega", "Nueva Zelanda", "Omán", "Países Bajos", "Pakistán", "Palaos", "Panamá", "Papúa Nueva Guinea", "Paraguay", "Perú", "Polonia", "Portugal", "Reino Unido", "República Centroafricana", "República Checa", "República del Congo", "República Democrática del Congo", "República Dominicana", "Ruanda", "Rumanía", "Rusia", "Samoa", "San Cristóbal y Nieves", "San Marino", "San Vicente y las Granadinas", "Santa Lucía", "Santo Tomé y Príncipe", "Senegal", "Serbia", "Seychelles", "Sierra Leona", "Singapur", "Siria", "Somalia", "Sri Lanka", "Sudáfrica", "Sudán", "Sudán del Sur", "Suecia", "Suiza", "Surinam", "Tailandia", "Tanzania", "Tayikistán", "Timor Oriental", "Togo", "Tonga", "Trinidad y Tobago", "Túnez", "Turkmenistán", "Turquía", "Tuvalu", "Ucrania", "Uganda", "Uruguay", "Uzbekistán", "Vanuatu", "Venezuela", "Vietnam", "Yemen", "Yibuti", "Zambia", "Zimbabue"
+];
+
+const SearchableCountrySelect = ({ label, value, onChange, placeholder }: { label: string, value: string, onChange: (val: string) => void, placeholder: string }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filtered = WORLD_COUNTRIES.filter(c => c.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <div ref={wrapperRef} className="relative w-full mb-4">
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">{label}</label>
+            <div 
+                className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm cursor-pointer border flex justify-between items-center text-[#111815] dark:text-gray-100 shadow-sm"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <span>{value || placeholder}</span>
+                <span className="material-symbols-outlined text-gray-400 text-lg">{isOpen ? 'expand_less' : 'expand_more'}</span>
+            </div>
+
+            {isOpen && (
+                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-[#20362c] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-slide-down">
+                    <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                        <input 
+                            type="text" 
+                            className="w-full bg-gray-50 dark:bg-[#1a2e26] p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:text-white" 
+                            placeholder="Escribe para buscar..." 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto no-scrollbar">
+                        {filtered.length > 0 ? (
+                            filtered.map(country => (
+                                <div 
+                                    key={country}
+                                    className={`p-3 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/20 transition-colors ${value === country ? 'bg-primary/10 text-primary font-bold' : 'text-gray-700 dark:text-gray-200'}`}
+                                    onClick={() => {
+                                        onChange(country);
+                                        setIsOpen(false);
+                                        setSearch('');
+                                    }}
+                                >
+                                    {country}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-4 text-sm text-center text-red-500 font-medium">
+                                El país no existe o está mal escrito.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const AuthScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -126,7 +198,6 @@ export const AuthScreen: React.FC = () => {
         setIsLoading(false);
     };
 
-    // --- Step 2: Handle Onboarding Submission ---
     const handleOnboardingSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -137,37 +208,72 @@ export const AuthScreen: React.FC = () => {
             return;
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
+        let finalOrigenId = null;
+        let finalDestinoId = null;
 
-        if (user) {
-            const updates = {
-                id: user.id,
-                fecha_nacimiento: fechaNacimiento || null,
-                genero: genero,
-                telefono: telefono,
-                como_nos_conocio: comoNosConocio,
-                acepta_marketing: aceptaMarketing,
-                fecha_actualizacion: new Date().toISOString(),
-                nombre: name,
-                apellido: lastName,
-                pais_origen_id: paisOrigenId || null,
-                pais_destino_id: paisDestinoId || null
-            };
-
-            const { error } = await supabase.from('perfiles').update(updates).eq('id', user.id);
-
-            if (error) {
-                console.error('Error updating perfiles:', error);
-                alert('Error al guardar el perfil: ' + error.message);
-            } else {
-                navigate('/');
+        try {
+            // Resolver UUID del pais de origen
+            if (paisOrigenId) {
+                const { data: existC } = await supabase.from('paises').select('id').eq('nombre', paisOrigenId).single();
+                if (existC) {
+                    finalOrigenId = existC.id;
+                } else {
+                    const { data: newC, error } = await supabase.from('paises').insert({ nombre: paisOrigenId }).select('id').single();
+                    if (error && error.code !== '23505') throw error;
+                    if (newC) finalOrigenId = newC.id;
+                    else {
+                        const { data: retry } = await supabase.from('paises').select('id').eq('nombre', paisOrigenId).single();
+                        if (retry) finalOrigenId = retry.id;
+                    }
+                }
             }
-        } else {
-            alert('Sesión no encontrada. Por favor inicia sesión nuevamente.');
-            setAuthStep('credentials');
-        }
 
-        setIsLoading(false);
+            // Resolver UUID del pais de destino
+            if (paisDestinoId) {
+                const { data: existC } = await supabase.from('paises').select('id').eq('nombre', paisDestinoId).single();
+                if (existC) {
+                    finalDestinoId = existC.id;
+                } else {
+                    const { data: newC, error } = await supabase.from('paises').insert({ nombre: paisDestinoId }).select('id').single();
+                    if (error && error.code !== '23505') throw error;
+                    if (newC) finalDestinoId = newC.id;
+                    else {
+                        const { data: retry } = await supabase.from('paises').select('id').eq('nombre', paisDestinoId).single();
+                        if (retry) finalDestinoId = retry.id;
+                    }
+                }
+            }
+
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user) {
+                const updates = {
+                    fecha_nacimiento: fechaNacimiento || null,
+                    genero: genero,
+                    telefono: telefono,
+                    como_nos_conocio: comoNosConocio,
+                    acepta_marketing: aceptaMarketing,
+                    fecha_actualizacion: new Date().toISOString(),
+                    nombre: name,
+                    apellido: lastName,
+                    pais_origen_id: finalOrigenId,
+                    pais_destino_id: finalDestinoId
+                };
+
+                const { error: profileError } = await supabase.from('perfiles').update(updates).eq('id', user.id);
+
+                if (profileError) throw profileError;
+                navigate('/');
+            } else {
+                alert('Sesión no encontrada. Por favor inicia sesión nuevamente.');
+                setAuthStep('credentials');
+            }
+        } catch (error: any) {
+            console.error('Error in onboarding submission:', error);
+            alert('Oh no! Ha ocurrido un error guardando el perfil: ' + (error.message || 'Código desconocido'));
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -193,7 +299,7 @@ export const AuthScreen: React.FC = () => {
                             <span className="material-symbols-outlined text-[#11211a] text-4xl font-bold group-hover:rotate-12 transition-transform">all_inclusive</span>
                         </button>
                         <h1 className="text-3xl font-extrabold tracking-tight text-[#111815] dark:text-white animate-slide-up" style={{ animationDelay: '0.2s' }}>ExpaIO</h1>
-                        <p className="text-[#638878] dark:text-gray-400 mt-2 font-medium animate-slide-up" style={{ animationDelay: '0.3s' }}>Tu compañero para vivir en Suiza</p>
+                        <p className="text-[#638878] dark:text-gray-400 mt-2 font-medium animate-slide-up" style={{ animationDelay: '0.3s' }}>Tu compañero para vivir en donde sueñas</p>
                     </div>
 
                     {authStep === 'credentials' && (
@@ -419,27 +525,21 @@ export const AuthScreen: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">¿De qué país vienes? (Origen)</label>
-                                    <select
+                                    <SearchableCountrySelect
+                                        label="¿De qué país vienes? (Origen)"
+                                        placeholder="Selecciona tu país de origen..."
                                         value={paisOrigenId}
-                                        onChange={(e) => setPaisOrigenId(e.target.value)}
-                                        className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
-                                    >
-                                        <option value="">Selecciona tu país...</option>
-                                        {countries.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                                    </select>
+                                        onChange={setPaisOrigenId}
+                                    />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 ml-1">¿A qué país quieres emigrar? (Destino)</label>
-                                    <select
+                                    <SearchableCountrySelect
+                                        label="¿A qué país quieres emigrar? (Destino)"
+                                        placeholder="Selecciona el país de destino..."
                                         value={paisDestinoId}
-                                        onChange={(e) => setPaisDestinoId(e.target.value)}
-                                        className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
-                                    >
-                                        <option value="">Selecciona tu destino...</option>
-                                        {countries.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                                    </select>
+                                        onChange={setPaisDestinoId}
+                                    />
                                 </div>
 
                                 <div>

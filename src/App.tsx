@@ -17,6 +17,7 @@ import { AuthScreen } from './features/auth/screens/AuthScreen';
 import { UpdatePasswordScreen } from './features/auth/screens/UpdatePasswordScreen';
 import { AboutUsScreen } from './features/about/screens/AboutUsScreen';
 import { PendingScreen } from './features/profile/screens/PendingScreen';
+import { RejectedScreen } from './features/profile/screens/RejectedScreen';
 import { AdminDashboard } from './features/profile/screens/AdminDashboard';
 
 import { useAuth } from './context/AuthContext';
@@ -34,6 +35,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
     if (profile?.estado_cuenta === 'pendiente') {
         return <PendingScreen />;
+    }
+
+    if (profile?.estado_cuenta === 'rechazado') {
+        return <RejectedScreen />;
     }
 
     return <>{children}</>;
