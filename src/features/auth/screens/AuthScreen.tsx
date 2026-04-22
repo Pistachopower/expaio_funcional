@@ -2,10 +2,43 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabaseClient';
 
-const WORLD_COUNTRIES = [
-    "Afganistán", "Albania", "Alemania", "Andorra", "Angola", "Antigua y Barbuda",
-     "Arabia Saudita", "Argelia", "Argentina", "Armenia", "Australia", "Austria", "Azerbaiyán", "Bahamas", "Bangladés", "Barbados", "Baréin", "Bélgica", "Belice", "Benín", "Bielorrusia", "Birmania", "Bolivia", "Bosnia y Herzegovina", "Botsuana", "Brasil", "Brunéi", "Bulgaria", "Burkina Faso", "Burundi", "Bután", "Cabo Verde", "Camboya", "Camerún", "Canadá", "Catar", "Chad", "Chile", "China", "Chipre", "Ciudad del Vaticano", "Colombia", "Comoras", "Corea del Norte", "Corea del Sur", "Costa de Marfil", "Costa Rica", "Croacia", "Cuba", "Dinamarca", "Dominica", "Ecuador", "Egipto", "El Salvador", "Emiratos Árabes Unidos", "Eritrea", "Eslovaquia", "Eslovenia", "España", "Estados Unidos", "Estonia", "Esuatini", "Etiopía", "Filipinas", "Finlandia", "Fiyi", "Francia", "Gabón", "Gambia", "Georgia", "Ghana", "Granada", "Grecia", "Guatemala", "Guinea", "Guinea Ecuatorial", "Guinea-Bisáu", "Guyana", "Haití", "Honduras", "Hungría", "India", "Indonesia", "Irak", "Irán", "Irlanda", "Islandia", "Islas Marshall", "Islas Salomón", "Israel", "Italia", "Jamaica", "Japón", "Jordania", "Kazajistán", "Kenia", "Kirguistán", "Kiribati", "Kuwait", "Laos", "Lesoto", "Letonia", "Líbano", "Liberia", "Libia", "Liechtenstein", "Lituania", "Luxemburgo", "Macedonia del Norte", "Madagascar", "Malasia", "Malaui", "Maldivas", "Malí", "Malta", "Marruecos", "Mauricio", "Mauritania", "México", "Micronesia", "Moldavia", "Mónaco", "Mongolia", "Montenegro", "Mozambique", "Namibia", "Nauru", "Nepal", "Nicaragua", "Níger", "Nigeria", "Noruega", "Nueva Zelanda", "Omán", "Países Bajos", "Pakistán", "Palaos", "Panamá", "Papúa Nueva Guinea", "Paraguay", "Perú", "Polonia", "Portugal", "Reino Unido", "República Centroafricana", "República Checa", "República del Congo", "República Democrática del Congo", "República Dominicana", "Ruanda", "Rumanía", "Rusia", "Samoa", "San Cristóbal y Nieves", "San Marino", "San Vicente y las Granadinas", "Santa Lucía", "Santo Tomé y Príncipe", "Senegal", "Serbia", "Seychelles", "Sierra Leona", "Singapur", "Siria", "Somalia", "Sri Lanka", "Sudáfrica", "Sudán", "Sudán del Sur", "Suecia", "Suiza", "Surinam", "Tailandia", "Tanzania", "Tayikistán", "Timor Oriental", "Togo", "Tonga", "Trinidad y Tobago", "Túnez", "Turkmenistán", "Turquía", "Tuvalu", "Ucrania", "Uganda", "Uruguay", "Uzbekistán", "Vanuatu", "Venezuela", "Vietnam", "Yemen", "Yibuti", "Zambia", "Zimbabue"
-];
+const COUNTRY_CODES: Record<string, string> = {
+    "Afganistán": "AF", "Albania": "AL", "Alemania": "DE", "Andorra": "AD", "Angola": "AO", "Antigua y Barbuda": "AG", 
+    "Arabia Saudita": "SA", "Argelia": "DZ", "Argentina": "AR", "Armenia": "AM", "Australia": "AU", "Austria": "AT", 
+    "Azerbaiyán": "AZ", "Bahamas": "BS", "Bangladés": "BD", "Barbados": "BB", "Baréin": "BH", "Bélgica": "BE", 
+    "Belice": "BZ", "Benín": "BJ", "Bielorrusia": "BY", "Birmania": "MM", "Bolivia": "BO", "Bosnia y Herzegovina": "BA", 
+    "Botsuana": "BW", "Brasil": "BR", "Brunéi": "BN", "Bulgaria": "BG", "Burkina Faso": "BF", "Burundi": "BI", 
+    "Bután": "BT", "Cabo Verde": "CV", "Camboya": "KH", "Camerún": "CM", "Canadá": "CA", "Catar": "QA", "Chad": "TD", 
+    "Chile": "CL", "China": "CN", "Chipre": "CY", "Ciudad del Vaticano": "VA", "Colombia": "CO", "Comoras": "KM", 
+    "Corea del Norte": "KP", "Corea del Sur": "KR", "Costa de Marfil": "CI", "Costa Rica": "CR", "Croacia": "HR", 
+    "Cuba": "CU", "Dinamarca": "DK", "Dominica": "DM", "Ecuador": "EC", "Egipto": "EG", "El Salvador": "SV", 
+    "Emiratos Árabes Unidos": "AE", "Eritrea": "ER", "Eslovaquia": "SK", "Eslovenia": "SI", "España": "ES", 
+    "Estados Unidos": "US", "Estonia": "EE", "Esuatini": "SZ", "Etiopía": "ET", "Filipinas": "PH", "Finlandia": "FI", 
+    "Fiyi": "FJ", "Francia": "FR", "Gabón": "GA", "Gambia": "GM", "Georgia": "GE", "Ghana": "GH", "Granada": "GD", 
+    "Grecia": "GR", "Guatemala": "GT", "Guinea": "GN", "Guinea Ecuatorial": "GQ", "Guinea-Bisáu": "GW", "Guyana": "GY", 
+    "Haití": "HT", "Honduras": "HN", "Hungría": "HU", "India": "IN", "Indonesia": "ID", "Irak": "IQ", "Irán": "IR", 
+    "Irlanda": "IE", "Islandia": "IS", "Islas Marshall": "MH", "Islas Salomón": "SB", "Israel": "IL", "Italia": "IT", 
+    "Jamaica": "JM", "Japón": "JP", "Jordania": "JO", "Kazajistán": "KZ", "Kenia": "KE", "Kirguistán": "KG", 
+    "Kiribati": "KI", "Kuwait": "KW", "Laos": "LA", "Lesoto": "LS", "Letonia": "LV", "Líbano": "LB", "Liberia": "LR", 
+    "Libia": "LY", "Liechtenstein": "LI", "Lituania": "LT", "Luxemburgo": "LU", "Macedonia del Norte": "MK", 
+    "Madagascar": "MG", "Malasia": "MY", "Malaui": "MW", "Maldivas": "MV", "Malí": "ML", "Malta": "MT", "Marruecos": "MA", 
+    "Mauricio": "MU", "Mauritania": "MR", "México": "MX", "Micronesia": "FM", "Moldavia": "MD", "Mónaco": "MC", 
+    "Mongolia": "MN", "Montenegro": "ME", "Mozambique": "MZ", "Namibia": "NA", "Nauru": "NR", "Nepal": "NP", 
+    "Nicaragua": "NI", "Níger": "NE", "Nigeria": "NG", "Noruega": "NO", "Nueva Zelanda": "NZ", "Omán": "OM", 
+    "Países Bajos": "NL", "Pakistán": "PK", "Palaos": "PW", "Panamá": "PA", "Papúa Nueva Guinea": "PG", "Paraguay": "PY", 
+    "Perú": "PE", "Polonia": "PL", "Portugal": "PT", "Reino Unido": "GB", "República Centroafricana": "CF", 
+    "República Checa": "CZ", "República del Congo": "CG", "República Democrática del Congo": "CD", "República Dominicana": "DO", 
+    "Ruanda": "RW", "Rumanía": "RO", "Rusia": "RU", "Samoa": "WS", "San Cristóbal y Nieves": "KN", "San Marino": "SM", 
+    "San Vicente y las Granadinas": "VC", "Santa Lucía": "LC", "Santo Tomé y Príncipe": "ST", "Senegal": "SN", 
+    "Serbia": "RS", "Seychelles": "SC", "Sierra Leona": "SL", "Singapur": "SG", "Siria": "SY", "Somalia": "SO", 
+    "Sri Lanka": "LK", "Sudáfrica": "ZA", "Sudán": "SD", "Sudán del Sur": "SS", "Suecia": "SE", "Suiza": "CH", 
+    "Surinam": "SR", "Tailandia": "TH", "Tanzania": "TZ", "Tayikistán": "TJ", "Timor Oriental": "TL", "Togo": "TG", 
+    "Tonga": "TO", "Trinidad y Tobago": "TT", "Túnez": "TN", "Turkmenistán": "TM", "Turquía": "TR", "Tuvalu": "TV", 
+    "Ucrania": "UA", "Uganda": "UG", "Uruguay": "UY", "Uzbekistán": "UZ", "Vanuatu": "VU", "Venezuela": "VE", 
+    "Vietnam": "VN", "Yemen": "YE", "Yibuti": "DJ", "Zambia": "ZM", "Zimbabue": "ZW"
+};
+
+const WORLD_COUNTRIES = Object.keys(COUNTRY_CODES);
 
 const SearchableCountrySelect = ({ label, value, onChange, placeholder }: { label: string, value: string, onChange: (val: string) => void, placeholder: string }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -145,6 +178,12 @@ export const AuthScreen: React.FC = () => {
             const cleanPassword = password.trim();
             const cleanName = name.trim();
             const cleanLastName = lastName.trim();
+            
+            if (!cleanEmail || !cleanPassword || !cleanName || !cleanLastName || !username.trim()) {
+                alert("Por favor, completa todos los campos requeridos.");
+                setIsLoading(false);
+                return;
+            }
 
             console.log('--- DEBUG START ---');
             console.log('Attempting signup with email:', cleanEmail);
@@ -202,9 +241,9 @@ export const AuthScreen: React.FC = () => {
         e.preventDefault();
         setIsLoading(true);
 
-        if (!fechaNacimiento) {
+        if (!fechaNacimiento || !telefono.trim() || !paisOrigenId || !paisDestinoId || !comoNosConocio) {
             setIsLoading(false);
-            alert("Por favor, ingresa tu fecha de nacimiento.");
+            alert("Por favor, completa todos los campos requeridos para configurar tu perfil.");
             return;
         }
 
@@ -214,15 +253,18 @@ export const AuthScreen: React.FC = () => {
         try {
             // Resolver UUID del pais de origen
             if (paisOrigenId) {
-                const { data: existC } = await supabase.from('paises').select('id').eq('nombre', paisOrigenId).single();
+                const { data: existC } = await supabase.from('paises').select('id').eq('nombre', paisOrigenId).maybeSingle();
                 if (existC) {
                     finalOrigenId = existC.id;
                 } else {
-                    const { data: newC, error } = await supabase.from('paises').insert({ nombre: paisOrigenId }).select('id').single();
+                    const { data: newC, error } = await supabase.from('paises').insert({ 
+                        nombre: paisOrigenId,
+                        codigo: COUNTRY_CODES[paisOrigenId] || paisOrigenId.substring(0, 2).toUpperCase()
+                    }).select('id').maybeSingle();
                     if (error && error.code !== '23505') throw error;
                     if (newC) finalOrigenId = newC.id;
                     else {
-                        const { data: retry } = await supabase.from('paises').select('id').eq('nombre', paisOrigenId).single();
+                        const { data: retry } = await supabase.from('paises').select('id').eq('nombre', paisOrigenId).maybeSingle();
                         if (retry) finalOrigenId = retry.id;
                     }
                 }
@@ -230,15 +272,18 @@ export const AuthScreen: React.FC = () => {
 
             // Resolver UUID del pais de destino
             if (paisDestinoId) {
-                const { data: existC } = await supabase.from('paises').select('id').eq('nombre', paisDestinoId).single();
+                const { data: existC } = await supabase.from('paises').select('id').eq('nombre', paisDestinoId).maybeSingle();
                 if (existC) {
                     finalDestinoId = existC.id;
                 } else {
-                    const { data: newC, error } = await supabase.from('paises').insert({ nombre: paisDestinoId }).select('id').single();
+                    const { data: newC, error } = await supabase.from('paises').insert({ 
+                        nombre: paisDestinoId,
+                        codigo: COUNTRY_CODES[paisDestinoId] || paisDestinoId.substring(0, 2).toUpperCase()
+                    }).select('id').maybeSingle();
                     if (error && error.code !== '23505') throw error;
                     if (newC) finalDestinoId = newC.id;
                     else {
-                        const { data: retry } = await supabase.from('paises').select('id').eq('nombre', paisDestinoId).single();
+                        const { data: retry } = await supabase.from('paises').select('id').eq('nombre', paisDestinoId).maybeSingle();
                         if (retry) finalDestinoId = retry.id;
                     }
                 }
@@ -549,7 +594,7 @@ export const AuthScreen: React.FC = () => {
                                         onChange={(e) => setComoNosConocio(e.target.value)}
                                         className="w-full rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a2e26] p-3.5 text-sm focus:border-primary focus:ring-primary dark:text-white shadow-sm transition-all"
                                     >
-                                        <option value="">Selección opcional...</option>
+                                        <option value="">Selecciona una opción...</option>
                                         <option value="redes_sociales">Redes Sociales (TikTok, Instragram...)</option>
                                         <option value="busqueda">Búsqueda en Google</option>
                                         <option value="amigo">Recomendación de un amigo o contacto</option>
