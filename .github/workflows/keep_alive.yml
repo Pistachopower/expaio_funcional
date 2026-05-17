@@ -1,0 +1,19 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Se ejecuta a las 12:00 AM UTC todos los días
+    - cron: '0 0 * * *'
+  # Permite correrlo manualmente si se desea
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hacer petición a Supabase
+        # Hace una consulta mínima a tu tabla de paises para simular actividad
+        run: |
+          curl -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/paises?limit=1" \
+          -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}"

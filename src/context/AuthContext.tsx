@@ -22,74 +22,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check active sessions and sets the user
+        let isMounted = true;
+
         const initializeAuth = async () => {
-            console.log('🔄 Autenticación: Iniciando verificación de sesión...');
+            // Timeout de seguridad: si en 4 segundos no hay respuesta, liberamos el spinner
+            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 4000));
+
             try {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                
-                if (sessionError) {
-                    console.error('❌ Error obteniendo sesión:', sessionError);
-                    throw sessionError;
+                // Ejecutamos la recuperación de sesión con un límite de tiempo
+                const result = await Promise.race([
+                    supabase.auth.getSession(),
+                    timeoutPromise
+                ]);
+
+                if (result === 'timeout') {
+                    if (isMounted) setLoading(false);
+                    return;
                 }
 
-                console.log('✅ Sesión recuperada:', session ? 'Usuario autenticado' : 'Sin sesión activa');
-                setSession(session);
-                setUser(session?.user ?? null);
+                const { data: { session }, error } = result as any;
                 
-                if (session?.user) {
-                    console.log('🔄 Perfil: Cargando datos para el usuario:', session.user.id);
-                    try {
-                        const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
-                        console.log('✅ Perfil cargado:', fetchedProfile ? 'Existente' : 'No encontrado');
-                        setProfile(fetchedProfile);
-                    } catch (profileError) {
-                        console.error('❌ Error cargando perfil:', profileError);
-                        setProfile(null);
-                    }
-                } else {
-                    setProfile(null);
+                if (error) throw error;
+
+                if (isMounted) {
+                    setSession(session);
+                    setUser(session?.user ?? null);
+                }
+                
+                if (session?.user && isMounted) {
+                    // Cargamos el perfil en segundo plano sin bloquear el setLoading(false) inicial
+                    ProfileRepository.getProfile(session.user.id)
+                        .then(fetchedProfile => {
+                            if (isMounted) setProfile(fetchedProfile);
+                        })
+                        .catch(() => {
+                            if (isMounted) setProfile(null);
+                        });
                 }
             } catch (error) {
-                console.error('💥 Error crítico en inicialización de Auth:', error);
+                // Silenciamos errores en producción para no ensuciar la consola, 
+                // pero aseguramos que la app cargue
             } finally {
-                console.log('🏁 Autenticación: Inicialización completada.');
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
             
             if (window.location.hash.includes('access_token')) {
-                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                try {
+                    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                } catch (e) { /* Ignorar fallos de history API en móviles antiguos */ }
             }
         };
 
         initializeAuth();
 
-        // Listen for changes on auth state (logged in, signed out, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('🔔 Evento de Auth detectado:', event);
-            try {
-                setSession(session);
-                setUser(session?.user ?? null);
-                
-                if (session?.user) {
-                    const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
-                    setProfile(fetchedProfile);
-                } else {
-                    setProfile(null);
-                    setLoading(false); // Ensure loading is off if signed out
-                }
-            } catch (error) {
-                console.error('❌ Error en cambio de estado de Auth:', error);
-            } finally {
-                setLoading(false);
-            }
+            if (!isMounted) return;
+
+            setSession(session);
+            setUser(session?.user ?? null);
             
-            if (session && window.location.hash.includes('access_token')) {
-                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            if (session?.user) {
+                const fetchedProfile = await ProfileRepository.getProfile(session.user.id);
+                if (isMounted) {
+                    setProfile(fetchedProfile);
+                    setLoading(false);
+                }
+            } else {
+                if (isMounted) {
+                    setProfile(null);
+                    setLoading(false);
+                }
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            isMounted = false;
+            subscription.unsubscribe();
+        };
     }, []);
 
     const refreshProfile = async () => {

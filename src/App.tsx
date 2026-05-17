@@ -19,8 +19,10 @@ import { AboutUsScreen } from './features/about/screens/AboutUsScreen';
 import { PendingScreen } from './features/profile/screens/PendingScreen';
 import { RejectedScreen } from './features/profile/screens/RejectedScreen';
 import { AdminDashboard } from './features/profile/screens/AdminDashboard';
+import { ConsultasScreen } from './features/consultas/screens/ConsultasScreen';
 
 import { useAuth } from './context/AuthContext';
+import { usePageTracker } from './hooks/usePageTracker';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, profile, loading } = useAuth();
@@ -44,9 +46,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <>{children}</>;
 };
 
+const PageTracker: React.FC = () => { usePageTracker(); return null; };
+
 const App: React.FC = () => {
     return (
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <PageTracker />
             <div className="flex h-screen w-full bg-background-light dark:bg-background-dark text-[#111815] dark:text-white overflow-hidden relative">
                 {/* Desktop Sidebar */}
                 <SideNav />
@@ -81,6 +86,7 @@ const App: React.FC = () => {
                                 <Route path="/audios-integracion" element={<ProtectedRoute><AudioScreen /></ProtectedRoute>} />
                                 <Route path="/guia-inicial" element={<ProtectedRoute><InitialGuideScreen /></ProtectedRoute>} />
                                 <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+                                <Route path="/consultas" element={<ProtectedRoute><ConsultasScreen /></ProtectedRoute>} />
                             </Routes>
                         </div>
                         {/* Spacer for bottom nav on mobile */}

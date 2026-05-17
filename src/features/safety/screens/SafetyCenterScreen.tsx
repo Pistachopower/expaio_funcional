@@ -535,7 +535,7 @@ export const SafetyCenterScreen: React.FC = () => {
                                         Cómo Protegerte
                                     </h3>
                                     <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 space-y-3">
-                                        {selectedAlert.details.split('\n').map((line, idx) => {
+                                        {selectedAlert.detalles.split('\n').map((line, idx) => {
                                             const trimmedLine = line.trim();
                                             if (!trimmedLine) return null;
 

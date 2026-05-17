@@ -7,10 +7,17 @@ import { useChecklist } from '../hooks/useChecklist';
 import { TaskItem } from '../components/TaskItem';
 import { TaskDetailModal } from '../components/TaskDetailModal';
 
+import { useRole } from '../../../hooks/useRole';
+import { Navigate } from 'react-router-dom';
+
 export const ChecklistScreen: React.FC = () => {
     const { user, profile } = useAuth();
+    const { isMigrante, isAdmin, isLoading: roleLoading } = useRole();
     const { tasks, isLoading, toggleTask, deleteTask, addTask, restoreDefaultTasks } = useChecklist(user);
     const [destinationCountry, setDestinationCountry] = useState<string>('');
+    const [activePhase, setActivePhase] = useState<TaskPhase>('planificacion');
+    const [newTaskTitle, setNewTaskTitle] = useState('');
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
     React.useEffect(() => {
         if (profile?.pais_destino_id) {
@@ -21,9 +28,9 @@ export const ChecklistScreen: React.FC = () => {
         }
     }, [profile?.pais_destino_id]);
 
-    const [activePhase, setActivePhase] = useState<TaskPhase>('planificacion');
-    const [newTaskTitle, setNewTaskTitle] = useState('');
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    if (!roleLoading && !isMigrante && !isAdmin) {
+        return <Navigate to="/" replace />;
+    }
 
     const visibleTasks = tasks.filter(t => t.phase === activePhase);
     const completedCount = tasks.filter(t => t.completed).length;

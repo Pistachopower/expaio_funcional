@@ -160,7 +160,7 @@ export const DirectoryScreen: React.FC = () => {
                     const mappedItems: DirectoryItem[] = data.map(item => ({
                         id: item.id,
                         name: item.nombre,
-                        type: (item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1)) as any,
+                        type: item.tipo ? (item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1)) as any : 'Other',
                         tag: item.tag,
                         location: item.ubicacion,
                         description: item.descripcion,

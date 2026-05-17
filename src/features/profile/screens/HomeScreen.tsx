@@ -4,9 +4,11 @@ import { InfoButton } from '../../../components';
 import { useAuth } from '../../../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../../../lib/supabaseClient';
+import { useRole } from '../../../hooks/useRole';
 
 export const HomeScreen: React.FC = () => {
     const { profile, refreshProfile } = useAuth();
+    const { isAdmin, isExpert, isMigrante } = useRole();
     const { userName, userPhoto } = useProfile(profile);
     const [countries, setCountries] = React.useState<any[]>([]);
     const [destinationCountry, setDestinationCountry] = React.useState<string | null>(null);
@@ -47,16 +49,12 @@ export const HomeScreen: React.FC = () => {
             setIsUpdating(false);
         }
     };
-
-    const isEmigrante = profile?.rol === 'emigrante' || !profile?.rol;
-    const isAdmin = profile?.rol === 'admin';
-    const isProfessional = ['profesor', 'abogado', 'ayuda'].includes(profile?.rol || '');
     
-    const bannerTitle = isProfessional 
+    const bannerTitle = isExpert 
         ? "Impulsa tu Presencia" 
         : `Tu Viaje a ${destinationCountry || 'el Extranjero'} Empieza Aquí`;
     
-    const bannerSubtitle = isProfessional
+    const bannerSubtitle = isExpert
         ? "Conecta con hispanohablantes que necesitan de tus servicios profesionales."
         : `Todo lo que necesitas para tu proceso de migración y establecimiento en ${destinationCountry || 'tu destino'}.`;
 
@@ -89,7 +87,7 @@ export const HomeScreen: React.FC = () => {
             <div className="px-4 space-y-6 w-full max-w-5xl mx-auto pb-24 md:pb-12">
                 {/* Theme Hero Section */}
                 <div className="relative h-48 md:h-64 rounded-3xl overflow-hidden shadow-xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                    <img src={isProfessional ? "/expert_hero.png" : "/hero.png"} alt="Banner" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = "/hero.png"; }} />
+                    <img src={isExpert ? "/expert_hero.png" : "/hero.png"} alt="Banner" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = "/hero.png"; }} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-6">
                         <h2 className="text-white text-xl font-bold mb-1">
                             {bannerTitle}
@@ -101,13 +99,13 @@ export const HomeScreen: React.FC = () => {
                     <div className="absolute top-4 right-4 animate-bounce">
                         <div className="bg-white/20 backdrop-blur-md size-10 rounded-full flex items-center justify-center border border-white/30">
                             <span className="material-symbols-outlined text-white text-xl">
-                                {isProfessional ? "campaign" : "flight_takeoff"}
+                                {isExpert ? "campaign" : "flight_takeoff"}
                             </span>
                         </div>
                     </div>
                 </div>
                 {/* Custom Middle Section depending on Role */}
-                {isProfessional ? (
+                {isExpert ? (
                     <Link to="/profile" className="flex flex-col bg-purple-600 rounded-2xl p-5 shadow-lg shadow-purple-600/25 relative overflow-hidden group transition-transform hover:scale-[1.01] active:scale-[0.99]">
                         <div className="absolute right-[-10px] top-[-10px] size-24 bg-white/20 rounded-full blur-xl"></div>
                         <div className="relative z-10">
@@ -155,7 +153,8 @@ export const HomeScreen: React.FC = () => {
                 </div>
 
                 {/* Emigrant Only Content */}
-                {(isEmigrante || isAdmin) && (
+                {(isMigrante || isAdmin) && (
+
                     <>
                         {/* Quick Tools Grid */}
                         <div>
